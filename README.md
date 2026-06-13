@@ -3,7 +3,7 @@
 ## 简要说明
 
 - 两套主题皮肤`modernz`、`uosc`
-- 使用原生 mpv.net 播放器
+- 使用原生 mpv.net 播放器，配置/播放器分离，无需担心播放器无法更新到最新版
 - 集成进度条缩略图预览：[Thumbfast](https://github.com/po5/thumbfast)
 - 集成漂亮的 UI 无边框设计：[Samillion/ModernZ]、[tomasklaen/uosc]
 - 集成在线中文字幕搜素-搜索快捷键：`Alt + f`：[dyphire/mpv-sub-assrt]
@@ -80,6 +80,11 @@
 - 其他快捷键请看这里：[快捷键大全](https://zhuanlan.zhihu.com/p/533804122)
 - 弹幕默认样式在配置文件夹`script-opts/uosc_danmaku.conf`下，要修改请使用文本编辑器打开编辑
 - 注：`modernz`主题的弹幕插件没有界面 UI，只能通过快捷键来使用
+
+## 如何更新到最新版
+
+- 播放器更新：直接下载最新版[🎬[mpvnet-player]](https://github.com/mpvnet-player/mpv.net/releases) 安装即可
+- 配置主题皮肤更新：直接下载最新版[🎯 点击下载](https://github.com/akFace/mpv.net.config/releases) 解压覆盖即可
 
 ## 预览效果图：
 
