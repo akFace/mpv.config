@@ -16,7 +16,7 @@
 
 ## 使用方法
 
-- 先安装 mpv 或者 mpv.net 播放器 (Windows 用户推荐下载 mpv.net)，下载地址：[mpvnet-player](https://github.com/mpvnet-player/mpv.net/releases)，建议下载`setup-x64.exe`安装程序版本。其他用户下载：[mpv 原生播放器](https://mpv.io/)
+- 先安装 mpv 或者 mpv.net 播放器 **(Windows 用户推荐下载 mpv.net)**，下载地址：[mpvnet-player](https://github.com/mpvnet-player/mpv.net/releases)，建议下载`setup-x64.exe`安装程序版本。其他用户下载：[mpv 原生播放器](https://mpv.io/)
 - [🎯 点击下载](https://github.com/akFace/mpv.net.config/releases) 你想要的主题皮肤（每个都已包含完整配置）`modernz`和`uosc`，并解压，**以下 ① 和 ② 根据自己选择的播放器按对应教程来即可**
 - **①. mpv.net 播放器**：如图所示，右键>配置>打开配置文件夹或者`Ctrl + f`快捷键打开`配置文件夹`
 
