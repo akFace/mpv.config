@@ -29,11 +29,11 @@
 ```
 一般的目录结构如下:
 ~/mpv/配置文件夹目录
-          ├── fonts
-          ├── scripts
-          ├── script-opts
-          ├── mpv.conf
-          └── input.conf
+      ├── fonts
+      ├── scripts
+      ├── script-opts
+      ├── mpv.conf
+      └── input.conf
 ```
 
 - 若你使用的并非 mpv.net 播放器，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpvnet`改为`mpv_path=mpv`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
