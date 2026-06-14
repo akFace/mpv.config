@@ -1,9 +1,10 @@
-# mpv 和 mpv.net 开箱即用配置文件&精美 UI 主题皮肤&常用插件
+# mpv 和 mpv.net 开箱即用配置文件&精美 UI 主题皮肤&常用插件（Windows、macOS、Linux）
 
 ## 简要说明
 
+- 支持 Windows、macOS、Linux
 - 两套主题皮肤`modernz`、`uosc`
-- 使用原生 mpv.net 播放器，配置/播放器分离，无需担心播放器无法更新到最新版
+- 使用原生 mpv 播放器，配置/播放器分离，无需担心播放器无法更新到最新版
 - 集成进度条缩略图预览：[Thumbfast](https://github.com/po5/thumbfast)
 - 集成漂亮的 UI 无边框设计：[Samillion/ModernZ]、[tomasklaen/uosc]
 - 集成在线中文字幕搜素-搜索快捷键：`Alt + f`：[dyphire/mpv-sub-assrt]
@@ -15,24 +16,24 @@
 
 ## 使用方法
 
-- 先安装 mpv.net 播放器，下载地址：[mpvnet-player](https://github.com/mpvnet-player/mpv.net/releases)，推荐下载`setup-x64.exe`安装程序版本
-- [🎯 点击下载](https://github.com/akFace/mpv.net.config/releases) 你想要的主题皮肤（每个都已包含完整配置）`modernz`和`uosc`，并解压
-- 如图所示，右键>配置>打开配置文件夹或者`Ctrl + f`快捷键打开配置文件夹
+- 先安装 mpv 或者 mpv.net 播放器（Windows 用户推荐下载 mpv.net），下载地址：[mpvnet-player](https://github.com/mpvnet-player/mpv.net/releases)，建议下载`setup-x64.exe`安装程序版本。也可下载：[mpv 原生播放器](https://mpv.io/)
+- [🎯 点击下载](https://github.com/akFace/mpv.net.config/releases) 你想要的主题皮肤（每个都已包含完整配置）`modernz`和`uosc`，并解压，以下 ① 和 ② 根据自己选择的播放器按教程来即可
+- ①. mpv.net 播放器：如图所示，右键>配置>打开配置文件夹或者`Ctrl + f`快捷键打开`配置文件夹`
 
   ![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-03-16_20-34-06.jpg)
 
-- 将解压出的全部复制到配置文件夹(只能共存一个主题配置)，重启播放器即可
+- ②. mpv 原生播放器：解压/安装播放器后，在播放器根目录下新建名为 `portable_config` 文件夹，作为`配置文件夹`
+- 将解压出的全部复制到`配置文件夹`(只能共存一个主题配置)，重启播放器即可
 - 注意目录结构
 
 ```
 一般的目录结构如下:
-~/.config/mpv
-├── fonts
-├── scripts
-├── script-opts
-├── mpv.conf
-└── input.conf
-
+~/.config/配置文件夹目录
+          ├── fonts
+          ├── scripts
+          ├── script-opts
+          ├── mpv.conf
+          └── input.conf
 ```
 
 - 若你使用的并非 mpv.net 播放器，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpvnet`改为`mpv_path=mpv`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
