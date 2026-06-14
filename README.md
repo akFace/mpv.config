@@ -16,13 +16,13 @@
 
 ## 使用方法
 
-- 先安装 mpv 或者 mpv.net 播放器（Windows 用户推荐下载 mpv.net），下载地址：[mpvnet-player](https://github.com/mpvnet-player/mpv.net/releases)，建议下载`setup-x64.exe`安装程序版本。也可下载：[mpv 原生播放器](https://mpv.io/)
-- [🎯 点击下载](https://github.com/akFace/mpv.net.config/releases) 你想要的主题皮肤（每个都已包含完整配置）`modernz`和`uosc`，并解压，以下 ① 和 ② 根据自己选择的播放器按对应教程来即可
-- ①. mpv.net 播放器：如图所示，右键>配置>打开配置文件夹或者`Ctrl + f`快捷键打开`配置文件夹`
+- 先安装 mpv 或者 mpv.net 播放器 (Windows 用户推荐下载 mpv.net)，下载地址：[mpvnet-player](https://github.com/mpvnet-player/mpv.net/releases)，建议下载`setup-x64.exe`安装程序版本。其他用户下载：[mpv 原生播放器](https://mpv.io/)
+- [🎯 点击下载](https://github.com/akFace/mpv.net.config/releases) 你想要的主题皮肤（每个都已包含完整配置）`modernz`和`uosc`，并解压，**以下 ① 和 ② 根据自己选择的播放器按对应教程来即可**
+- **①. mpv.net 播放器**：如图所示，右键>配置>打开配置文件夹或者`Ctrl + f`快捷键打开`配置文件夹`
 
   ![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-03-16_20-34-06.jpg)
 
-- ②. mpv 原生播放器：解压/安装播放器后，在播放器根目录下新建名为 `portable_config` 文件夹，作为`配置文件夹`
+- **②. mpv 原生播放器**：解压/安装播放器后，在播放器根目录下新建名为 `portable_config` 文件夹，作为`配置文件夹`
 - 将解压出的全部复制到`配置文件夹`(只能共存一个主题配置)，重启播放器即可
 - 注意目录结构
 
@@ -84,7 +84,7 @@
 
 ## 如何更新到最新版
 
-- 播放器更新：直接下载最新版[🎬[mpv.net 播放器]](https://github.com/mpvnet-player/mpv.net/releases) 或者[mpv 原生播放器](https://mpv.io/)安装即可
+- 播放器更新：直接下载最新版[🎬[mpv.net 播放器]](https://github.com/mpvnet-player/mpv.net/releases) 或者[[mpv 原生播放器]](https://mpv.io/)安装即可
 - 配置主题皮肤更新：直接下载最新版[🎯 点击下载](https://github.com/akFace/mpv.net.config/releases) 解压覆盖即可
 
 ## 预览效果图：
