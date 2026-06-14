@@ -28,7 +28,7 @@
 
 ```
 一般的目录结构如下:
-~/.config/配置文件夹目录
+~/mpv/配置文件夹目录
           ├── fonts
           ├── scripts
           ├── script-opts
