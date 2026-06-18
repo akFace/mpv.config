@@ -93,8 +93,13 @@
   `Alt+F12` Anime4K: Mode C+A (Fast)
 
 - 其他快捷键请看这里：[快捷键大全](https://zhuanlan.zhihu.com/p/533804122)
-- 弹幕默认样式在配置文件夹`script-opts/uosc_danmaku.conf`下，要修改请使用文本编辑器打开编辑
 - 注：`modernz`主题的弹幕插件没有界面 UI，只能通过快捷键来使用
+
+#### 一些常用设置（可选）
+
+- 弹幕默认样式在配置文件夹`script-opts/uosc_danmaku.conf`下，要修改请使用文本编辑器打开编辑
+- 弹幕相关配置：[查看文档](https://github.com/Tony15246/uosc_danmaku#%E7%9B%AE%E5%BD%95)
+- 跳过片头片尾：在配置文件夹中`mpv.conf`,打开编辑，可看到注释的跳过片头片尾，把注释的#号去掉，填写上自定义的片头片尾时间重启播放器即可
 
 ## 如何更新到最新版
 
