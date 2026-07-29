@@ -10,6 +10,33 @@ local function ass_escape(text)
                :gsub("\n", "\\N")
 end
 
+-- 构建 per-source 的延迟查询函数
+local function make_delay_lookup(source)
+    local segments = nil
+    local prefix = nil
+    if source and source.delay_segments and #source.delay_segments > 0 then
+        segments = {}
+        for i, v in ipairs(source.delay_segments) do segments[i] = v end
+        table.sort(segments, function(a, b) return (a.start or 0) < (b.start or 0) end)
+        prefix = {}
+        local s = 0
+        for i, v in ipairs(segments) do
+            s = s + (v.delay or 0)
+            prefix[i] = s
+        end
+    end
+
+    return function(t)
+        local segs = segments or {}
+        local pre = prefix or {}
+        if #segs == 0 then return 0 end
+        local idx = binary_search(segs, t, function(s) return (s and s.start) or 0 end)
+        local target = idx - 1
+        if target < 1 then return 0 end
+        return pre[target] or 0
+    end
+end
+
 local function xml_unescape(str)
     return str:gsub("&quot;", "\"")
               :gsub("&apos;", "'")
@@ -154,62 +181,103 @@ local function merge_duplicate_danmaku(danmakus, threshold)
     local groups = {}
 
     for _, d in ipairs(danmakus) do
-        local tkey = tostring(d.type or "")
-        local ckey = tostring(d.color or "")
+        local tkey = options.merge_without_style and "any" or tostring(d.type or "")
         local text = d.text or ""
 
-        groups[tkey] = groups[tkey] or {}
-        groups[tkey][ckey] = groups[tkey][ckey] or {}
-        groups[tkey][ckey][text] = groups[tkey][ckey][text] or {}
-        table.insert(groups[tkey][ckey][text], d)
+        groups[text] = groups[text] or {}
+        groups[text][tkey] = groups[text][tkey] or {}
+        table.insert(groups[text][tkey], d)
+    end
+
+    local final_groups = {}
+
+    -- 颜色合并
+    for _, type_groups in pairs(groups) do
+        for _, list in pairs(type_groups) do
+            if options.merge_without_style then
+                table.insert(final_groups, list)
+            else
+                local color_groups = {}
+                -- 利用弹幕同色大量重复的特征，缓存 颜色值 -> color_groups 索引
+                local exact_color_cache = {}
+
+                for _, d in ipairs(list) do
+                    local c = d.color or 16777215
+                    local g_idx = exact_color_cache[c]
+
+                    if g_idx then
+                        -- 命中缓存，直接插入
+                        table.insert(color_groups[g_idx], d)
+                    else
+                        -- 未命中的颜色值，计算它是否落入已有代表颜色的 15 容差范围内
+                        local found = false
+                        for i, cg in ipairs(color_groups) do
+                            if color_dist(cg[1].color or 16777215, c) <= 15 then
+                                table.insert(cg, d)
+                                -- 将该颜色值缓存为这个代表颜色的索引，后续遇到完全相同的颜色值可以直接命中
+                                exact_color_cache[c] = i
+                                found = true
+                                break
+                            end
+                        end
+
+                        -- 超出容差范围的全新颜色代表，开辟新组
+                        if not found then
+                            table.insert(color_groups, {d})
+                            exact_color_cache[c] = #color_groups
+                        end
+                    end
+                end
+                
+                for _, cg in ipairs(color_groups) do
+                    table.insert(final_groups, cg)
+                end
+            end
+        end
     end
 
     local merged = {}
     local abs = math.abs
 
-    for _, bytype in pairs(groups) do
-        for _, bycolor in pairs(bytype) do
-            for _, group in pairs(bycolor) do
-                table.sort(group, function(a, b) return a.time < b.time end)
+    for _, group in ipairs(final_groups) do
+        table.sort(group, function(a, b) return a.time < b.time end)
 
-                local i = 1
-                while i <= #group do
-                    local base = group[i]
-                    local times = { base.time }
-                    local count = 1
-                    local j = i + 1
+        local i = 1
+        while i <= #group do
+            local base = group[i]
+            local times = { base.time }
+            local count = 1
+            local j = i + 1
 
-                    while j <= #group and abs(group[j].time - base.time) <= threshold do
-                        times[#times+1] = group[j].time
-                        count = count + 1
-                        j = j + 1
-                    end
+            while j <= #group and abs(group[j].time - base.time) <= threshold do
+                times[#times+1] = group[j].time
+                count = count + 1
+                j = j + 1
+            end
 
-                    local same_time = true
-                    for k = 2, #times do
-                        if times[k] ~= times[1] then
-                            same_time = false
-                            break
-                        end
-                    end
-
-                    local danmaku = {
-                        time = base.time,
-                        type = base.type,
-                        size = base.size,
-                        color = base.color,
-                        text = base.text,
-                        source = base.source,
-                        orig_time = base.orig_time,
-                    }
-                    if count > 2 or not same_time then
-                        danmaku.text = danmaku.text .. string.format("x%d", count)
-                    end
-
-                    table.insert(merged, danmaku)
-                    i = j
+            local same_time = true
+            for k = 2, #times do
+                if times[k] ~= times[1] then
+                    same_time = false
+                    break
                 end
             end
+
+            local danmaku = {
+                time = base.time,
+                type = base.type,
+                size = base.size,
+                color = base.color,
+                text = base.text,
+                source = base.source,
+                orig_time = base.orig_time,
+            }
+            if count > 2 or not same_time then
+                danmaku.text = danmaku.text .. string.format("x%d", count)
+            end
+
+            table.insert(merged, danmaku)
+            i = j
         end
     end
 
@@ -259,8 +327,11 @@ local function limit_danmaku(danmakus, limit)
 end
 
 -- 解析 XML 弹幕
-local function parse_xml_danmaku(xml_string)
+function parse_xml_danmaku(xml_string)
     local danmakus = {}
+    if not xml_string then
+        return danmakus
+    end
     -- [^>]* 匹配其他 attributes
     -- %f[^%s] 确保 p= 前面是空白字符
     for p_attr, text in xml_string:gmatch('<d%s+[^>]*%f[^%s]p="([^"]+)"[^>]*>([^<]+)</d>') do
@@ -287,7 +358,7 @@ local function parse_xml_danmaku(xml_string)
 end
 
 -- 解析 JSON 弹幕
-local function parse_json_danmaku(json_string)
+function parse_json_danmaku(json_string)
     local danmakus = {}
     if json_string:sub(1, 3) == "\239\187\191" then
         json_string = json_string:sub(4)
@@ -469,10 +540,22 @@ end
 -- 将弹幕转换为 XML 格式
 function convert_danmaku_to_xml(danmaku_out)
     local danmakus = {}
-    for _, source in pairs(DANMAKU.sources) do
+    for url, source in pairs(DANMAKU.sources) do
         if not source.blocked and source.data then
+            local get_cached_delay = make_delay_lookup(source)
+
             for _, d in ipairs(source.data) do
-                table.insert(danmakus, d)
+                local base_time = d.orig_time or d.time
+                local adjusted_time = base_time + get_cached_delay(base_time)
+                table.insert(danmakus, {
+                    orig_time = d.orig_time,
+                    time = adjusted_time,
+                    type = d.type,
+                    size = d.size,
+                    color = d.color,
+                    text = d.text,
+                    source = url,
+                })
             end
         end
     end
@@ -521,29 +604,7 @@ function convert_danmaku_to_ass_events(force)
     local per_source_lists = {}
     for url, source in pairs(DANMAKU.sources) do
         if not source.blocked and source.data then
-            local segments = nil
-            local prefix = nil
-            if source.delay_segments and #source.delay_segments > 0 then
-                segments = {}
-                for i, v in ipairs(source.delay_segments) do segments[i] = v end
-                table.sort(segments, function(a, b) return (a.start or 0) < (b.start or 0) end)
-                prefix = {}
-                local s = 0
-                for i, v in ipairs(segments) do
-                    s = s + (v.delay or 0)
-                    prefix[i] = s
-                end
-            end
-
-            local function get_cached_delay(t)
-                local segs = segments or {}
-                local pre = prefix or {}
-                if #segs == 0 then return 0 end
-                local idx = binary_search(segs, t, function(s) return (s and s.start) or 0 end)
-                local target = idx - 1
-                if target < 1 then return 0 end
-                return pre[target] or 0
-            end
+            local get_cached_delay = make_delay_lookup(source)
 
             local list = {}
             for _, d in ipairs(source.data) do
@@ -711,6 +772,7 @@ function convert_danmaku_to_ass_events(force)
                 clean_text = clean_text,
                 pos = pos,
                 move = move,
+                layer = (style == "R2L") and 0 or 1,
                 source = d.source,
             }
             table.insert(ass_events, event)

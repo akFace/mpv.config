@@ -63,11 +63,43 @@
 
 </details>
 
+## 目录
+
+- [项目简介](#项目简介)
+  - [主要功能](#主要功能)
+- [安装](#安装)
+  - [下载](#下载)
+- [基本配置](#基本配置)
+  - [uosc控件配置](#uosc控件配置)
+  - [绑定快捷键（可选）](#绑定快捷键可选)
+- [拓展功能（可选）](#拓展功能可选)
+  - [从弹幕源向当前弹幕添加新弹幕内容（从网络url或本地添加弹幕）](#从弹幕源向当前弹幕添加新弹幕内容可选)
+  - [弹幕源延迟设置](#弹幕源延迟设置可选)
+  - [实时修改弹幕样式](#实时修改弹幕样式可选)
+  - [弹幕设置总菜单](#弹幕设置总菜单可选)
+  - [设置弹幕延迟（可选）](#设置弹幕延迟可选)
+  - [保存当前视频弹幕（可选）](#保存当前视频弹幕可选)
+  - [清空当前视频关联的弹幕源（可选）](#清空当前视频关联的弹幕源可选)
+  - [检查脚本更新（可选）](#检查脚本更新可选)
+- [可配置选项（可选）](#可配置选项可选)
+  - [弹幕加载相关](#弹幕加载相关)
+  - [弹幕显示相关](#弹幕显示相关)
+  - [弹幕解析服务相关](#弹幕解析服务相关)
+  - [插件配置相关](#插件配置相关)
+  - [自定义弹幕样式相关配置](#自定义弹幕样式相关配置)
+- [插件自定义属性](#插件自定义属性)
+- [常见问题](#常见问题)
+- [特别感谢](#特别感谢)
+- [相关项目](#相关项目)
+
 ## 安装
 
 ### 下载
 
 一般的mpv配置目录结构大致如下
+
+> [!NOTE]
+> Windows 系统上等价全局配置路径`%APPDATA%/mpv/`，也可使用 mpv.exe 所在目录的 portable_config 文件夹（便携配置路径）
 
 ```
 ~/.config/mpv
@@ -301,7 +333,7 @@ key script-message danmaku-delay <seconds> ${=time-pos}
 
 > #### 保存当前视频弹幕（可选）
 
-在视频播放时手动保存弹幕至视频所在文件夹，保存格式为 `xml`（注：此功能将保存为视频同名弹幕，若视频文件夹下存在同名文件将不会执行该功能）
+在视频播放时手动保存弹幕，保存格式为 `xml`（注：此功能将保存为视频同名弹幕，若目标文件夹下存在同名文件将不会执行该功能）。默认保存至视频所在文件夹，也可以通过 `save_danmaku_path` 和 `save_danmaku_path_mode` 保存到指定文件夹。
 
 想要通过快捷键使用此功能，请添加类似下面的配置到 `input.conf`中。从源添加弹幕功能对应的脚本消息为 `immediately_save_danmaku`。
 
@@ -472,7 +504,7 @@ save_danmaku
 
 #### 功能说明
 
-当文件关闭时自动保存弹幕文件（xml格式）至视频同目录，保存的弹幕文件名与对应的视频文件名相同。配合[autoload_local_danmaku选项](#autoload_local_danmaku)可以实现弹幕自动保存到本地并且下次播放时自动加载本地保存的弹幕。此功能默认禁用。
+当文件关闭时自动保存弹幕文件（xml格式），保存的弹幕文件名与对应的视频文件名相同。默认保存至视频同目录，配合[autoload_local_danmaku选项](#autoload_local_danmaku)可以实现弹幕自动保存到本地并且下次播放时自动加载本地保存的弹幕。此功能默认禁用。
 
 > **⚠️NOTE！**
 > 
@@ -492,35 +524,30 @@ save_danmaku
 save_danmaku=yes
 ```
 
-</details>
+如需保存到指定文件夹，请提前创建目标文件夹，然后配置 `save_danmaku_path` 和 `save_danmaku_path_mode`。插件不会自动创建目录。
 
----
+保存本地媒体到指定文件夹时，文件名会包含视频父目录名，用于减少不同目录下同名视频的弹幕文件冲突。例如 `动画/01.mkv` 会保存为类似 `动画_01.xml`。网络媒体保存到指定文件夹时仍使用媒体标题作为文件名。
 
-<details>
-<summary>
+`save_danmaku_path_mode` 可选值如下：
 
-~~add_from_source~~
+- `local`：默认值，仅本地媒体保存到 `save_danmaku_path`，网络媒体仍不保存
+- `url`：仅网络媒体保存到 `save_danmaku_path`，本地媒体仍保存到视频同目录
+- `all`：本地媒体和网络媒体都保存到 `save_danmaku_path`
 
-> ~~开关记录通过 从弹幕源向当前弹幕添加新弹幕内容 关联过的弹幕源并自动加载（已废除）~~
-
-</summary>
-
-### add_from_source
-
-> **⚠️NOTE！**
-> 
-> 该可选配置项在Release v1.2.0之后已废除。现在通过 `从弹幕源向当前弹幕添加新弹幕内容`功能关联过的弹幕源被记录，并且下次播放同一个视频的时候自动关联并加载所有添加过的弹幕源，这样的行为已经成为了插件的默认行为，不需要再通过 `add_from_source`来开启。在[从源获取弹幕](#从弹幕源向当前弹幕添加新弹幕内容可选)菜单中可以可视化地管理所有添加过的弹幕源。
-
-#### 功能说明
-
-开启此选项后，通过 `从弹幕源向当前弹幕添加新弹幕内容`功能关联过的弹幕源会被记录，并且下次播放同一个视频的时候会自动关联并加载添加过的弹幕源。
-
-#### 使用方法
-
-想要开启此选项，请在mpv配置文件夹下的 `script-opts`中创建 `uosc_danmaku.conf`文件并添加如下内容：
+例如，仅将网络媒体的弹幕保存到 `~~/danmaku`：
 
 ```
-add_from_source=yes
+save_danmaku=yes
+save_danmaku_path=~~/danmaku
+save_danmaku_path_mode=url
+```
+
+例如，将所有媒体的弹幕都保存到 `~~/danmaku`：
+
+```
+save_danmaku=yes
+save_danmaku_path=~~/danmaku
+save_danmaku_path_mode=all
 ```
 
 </details>
@@ -607,6 +634,35 @@ merge_tolerance
 
 ```
 merge_tolerance=1
+```
+
+</details>
+
+---
+
+<details>
+<summary>
+merge_without_style
+
+> 决定在合并重复弹幕时是否忽略类型和颜色差异
+
+</summary>
+
+### merge_without_style
+
+#### 功能说明
+
+配合 `merge_tolerance` 使用。默认值: `no`（关闭）
+
+当开启此选项时，即使属于不同位置类型（如顶部、底部、滚动）或不同颜色（无论色差多大），只要弹幕文本内容相同并且在 `merge_tolerance` 指定的时间容差范围内，就会被强制合并成一条弹幕。
+关闭时，仅当弹幕内容相同、位置类型相同、且颜色肉眼不可区分（色差极小）时，才会进行弹幕合并。
+
+#### 使用方法
+
+想要使用此选项，请在mpv配置文件夹下的 `script-opts`中创建 `uosc_danmaku.conf`文件并自定义如下内容：
+
+```
+merge_without_style=yes
 ```
 
 </details>
@@ -713,7 +769,9 @@ api_server
 
 #### 功能说明
 
-允许自定义弹幕 API 的服务地址
+允许自定义弹幕 API 的服务地址，可指定多个用逗号分隔的有序 api_server 列表
+
+支持每项使用 '|' 或 '#' 分隔备注，例如: "https://a.example.com|备用A" 或 "https://b.example.com#备用B"
 
 > **⚠️NOTE！**
 > 
@@ -1015,6 +1073,9 @@ blacklist_path=
 - `user-data/uosc_danmaku/has-danmaku`
     从`user-data/uosc_danmaku/has-danmaku`属性中可以获取到表示当前是否有弹幕在显示的布尔值，具体用法可以参考[此pr](https://github.com/Tony15246/uosc_danmaku/pull/276)
 
+- `user-data/uosc_danmaku/danmaku-switch-on`
+    从`user-data/uosc_danmaku/danmaku-switch-on`属性中可以获取到表示当前弹幕开关状态的布尔值，具体用法可以参考[此issue](https://github.com/Tony15246/uosc_danmaku/issues/362)
+
 ## 常见问题
 
 ### 来自弹弹play的弹幕源问题如何从根源进行调整解决
@@ -1049,10 +1110,12 @@ blacklist_path=
 - 弹幕格式解析转换：[DanmakuConvert](https://github.com/timerring/DanmakuConvert)
 - 简繁转换：[OpenCC](https://github.com/BYVoid/OpenCC)
 - lua原生md5计算实现：https://github.com/rkscv/danmaku
+- lua原生zip解压缩实现：[lua-inflate](https://github.com/TohruMKDM/lua-inflate)
+- 爱优腾及芒果TV的弹幕解析参考：https://github.com/lyz05/danmaku
 - b站在线播放弹幕获取实现参考：[MPV-Play-BiliBili-Comments](https://github.com/itKelis/MPV-Play-BiliBili-Comments)
 - 巴哈姆特在线播放弹幕获取实现参考：[MPV-Play-BAHA-Comments](https://github.com/s594569321/MPV-Play-BAHA-Comments)
 
 ## 相关项目
 
 - [slqy123/uosc_danmaku](https://github.com/slqy123/uosc_danmaku) 本项目的fork版本，实现了通过dandanplay api发送弹幕的功能，由于版本的兼容性以及功能的易用性问题未被合并，具体讨论请参阅 [#220](https://github.com/Tony15246/uosc_danmaku/pull/220)
-- [Loukyuu1120/uosc_danmaku](https://github.com/Loukyuu1120/uosc_danmaku) 本项目的fork版本，实现了自定义多个 api_servers 与 弹幕来源选择菜单 功能，具体讨论请参阅 [#282](https://github.com/Tony15246/uosc_danmaku/issues/282)
+- ~~[Loukyuu1120/uosc_danmaku](https://github.com/Loukyuu1120/uosc_danmaku) 本项目的fork版本，实现了自定义多个 api_servers 与 弹幕来源选择菜单 功能，具体讨论请参阅 [#282](https://github.com/Tony15246/uosc_danmaku/issues/282)~~ 相关功能主仓库已实现
