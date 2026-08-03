@@ -11,10 +11,10 @@
 - 支持全网弹幕加载，集成插件：[Tony15246/uosc_danmaku]
 - 集成 Anime4K 超分超清画质，提升画质：[Anime4K](https://github.com/bloc97/Anime4K)
 - 支持插帧模式功能，提升流畅度
-- [>>快捷键优化](https://github.com/akFace/mpv.config#%E5%B8%B8%E7%94%A8%E5%BF%AB%E6%8D%B7%E9%94%AE)
+- 快捷键优化
+- 超简单，只需两个步骤即可完成享用
 - [>>查看主题预览效果截图](https://github.com/akFace/mpv.config#%E9%A2%84%E8%A7%88%E6%95%88%E6%9E%9C%E5%9B%BE)
 - [>>常见相关问题](https://github.com/akFace/mpv.config#%E4%B8%80%E4%BA%9B%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE%E5%8F%AF%E9%80%89)
-- 超简单，只需两个步骤即可完成享用
 
 ## 使用方法
 
@@ -51,6 +51,7 @@
 `Ctrl+-` 画面缩放：缩小  
 `Ctrl++` 画面缩放：放大  
 `a` 画面纵横比例  
+`t` 统计显示信息（文件、解码、滤镜信息等）  
 `]` 播放倍速+  
 `[` 播放倍速-  
 `Enter` 全屏/退出全屏  
@@ -66,7 +67,10 @@
 `鼠标左键` 在画面中间处按住拖动窗口  
 `Ctrl + i` 查看和设置所有快捷键 (仅 mpvnet 有效)
 
-#### 超帧插帧开启快捷键
+- 其他快捷键请看这里：[快捷键大全](https://zhuanlan.zhihu.com/p/533804122)
+- 注：`modernz`主题的弹幕插件没有界面 UI，只能通过快捷键来使用
+
+### 超帧插帧开启快捷键
 
 `n` 键，默认关闭插帧，连按循环：`关闭插帧` ➜ `电影模式` ➜ `动漫模式` ➜ `极致丝滑`
 
@@ -74,7 +78,7 @@
 - 本配置使用 mpv 内置时间轴插帧（interpolation=yes）—— 根据网上 AI 结论：最推荐，综合体验最好，适合大部分硬件设备。[如果需要其他插帧方式，可询问 AI，方法也很简单]
 - 结合 Anime4K 超分画质达到最佳观影体验
 
-#### Anime4K 超分画质开启快捷键
+### Anime4K 超分画质开启快捷键
 
 `Alt+del` 关闭 Anime4K，默认关闭
 
@@ -95,10 +99,7 @@
   `Alt+11` Anime4K: Mode B+B (Fast)  
   `Alt+F12` Anime4K: Mode C+A (Fast)
 
-- 其他快捷键请看这里：[快捷键大全](https://zhuanlan.zhihu.com/p/533804122)
-- 注：`modernz`主题的弹幕插件没有界面 UI，只能通过快捷键来使用
-
-#### 一些常用设置（可选）
+### 一些常用设置（可选）
 
 - 弹幕默认样式在配置文件夹`script-opts/uosc_danmaku.conf`下，要修改请使用文本编辑器打开编辑
 - 弹幕相关配置：[查看文档](https://github.com/Tony15246/uosc_danmaku#%E7%9B%AE%E5%BD%95)
