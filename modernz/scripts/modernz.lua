@@ -375,7 +375,7 @@ local function build_icons(theme_name, style)
         screenshot      = o("photo_camera"),
         ontop_on        = o("pip"),
         ontop_off       = o("pip_exit"),
-        info            = o("info"),
+        info            = o("subtitles_filled"),
         fullscreen      = o("fullscreen"),
         fullscreen_exit = o("fullscreen_exit"),
 
