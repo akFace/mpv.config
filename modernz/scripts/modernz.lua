@@ -286,7 +286,8 @@ local user_opts = {
     fullscreen_mbtn_right_command = "cycle window-maximized",
 
     -- info button mouse actions
-    info_mbtn_left_command = "script-binding stats/display-page-1-toggle",
+    info_mbtn_left_command = "script-message show_danmaku_keyboard",
+    info_mbtn_right_command = "script-message open_add_total_menu",
 
     -- ontop (pin) button mouse actions
     ontop_mbtn_left_command = "osd-msg cycle ontop",
