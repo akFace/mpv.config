@@ -2620,6 +2620,7 @@ layouts["compact"] = function ()
     end
 
     right_side_button("fullscreen", 300, user_opts.fullscreen_button)
+    right_side_button("info", 300, user_opts.info_button)
     right_side_button("ontop", 400, user_opts.ontop_button and not (window_controls_enabled() and user_opts.ontop_in_topbar and state.ontop))
     right_side_button("sub_track", 500, user_opts.subtitles_button and state.sub_track_count > 0)
     right_side_button("audio_track", 600, user_opts.audio_tracks_button and state.audio_track_count > 0)
@@ -2795,6 +2796,7 @@ layouts["mini"] = function ()
     end
 
     right_side_button("fullscreen", 250, user_opts.fullscreen_button)
+    right_side_button("info", 300, user_opts.info_button)
     right_side_button("ontop", 300, user_opts.ontop_button and not (window_controls_enabled() and user_opts.ontop_in_topbar and state.ontop))
     right_side_button("sub_track", 400, user_opts.subtitles_button and state.sub_track_count > 0)
     right_side_button("audio_track", 500, user_opts.audio_tracks_button and state.audio_track_count > 0)
