@@ -63,19 +63,19 @@ jobs:
 
           # 生成 Release 描述
           cat > release_body.txt <<EOF
-                ### 两套主题皮肤：\`modernz\` 和 \`uosc\`
+          ### 两套主题皮肤：\`modernz\` 和 \`uosc\`
 
-                - 请选择喜欢的某一套下载即可
-                - 已包含所有配置文件，解压放到配置文件夹下即可
-                - 👉 [使用教程](https://github.com/akFace/mpv.config#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95)
+          - 请选择喜欢的某一套下载即可
+          - 已包含所有配置文件，解压放到配置文件夹下即可
+          - 👉 [使用教程](https://github.com/akFace/mpv.config#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95)
 
-                Update log:
+          ---
 
-                $COMMITS
-            EOF
+          ## Update log:
 
-          echo "Release notes:"
-          cat release_body.txt
+          EOF
+
+          echo "$COMMITS" >> release_body.txt
 
       - name: Create ZIP Archives
         run: |
