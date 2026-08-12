@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - master # 如果你的默认分支是 master，请修改这里
-    # paths:
-    #   - 'modernz/**'
-    #   - 'uosc/**'
   workflow_dispatch:
 
 jobs:
@@ -28,11 +25,13 @@ jobs:
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
           echo "Last Tag: $LAST_TAG"
 
-          # 自动递增版本号（假设格式为 v主版本.次版本.修订号）
+          # 自动递增版本号（例如 v1.9.5 -> v1.9.6）
           VERSION_NUM=${LAST_TAG#v}
-          IFS='.' read -r major minor patch <<< "$VERSION_NUM"
-          NEW_PATCH=$((patch + 1))
-          NEW_TAG="v$major.$minor.$NEW_PATCH"
+          MAJOR_MINOR=${VERSION_NUM%.*}  # 提取主版本和次版本，例如 1.9
+          PATCH=${VERSION_NUM##*.}       # 提取修订号，例如 5
+          NEW_PATCH=$((PATCH + 1))
+          NEW_TAG="v$MAJOR_MINOR.$NEW_PATCH"
+
           echo "New Tag: $NEW_TAG"
           echo "NEW_TAG=$NEW_TAG" >> $GITHUB_OUTPUT
 
@@ -55,7 +54,7 @@ jobs:
             echo "- 已包含所有配置文件，解压放到配置文件夹下即可"
             echo "- 👉 [使用教程](https://github.com/akFace/mpv.config#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95)"
             echo ""
-            echo "本次更新内容如下："
+            echo "Update log:"
             echo ""
             echo "$COMMITS"
           } > release_body.txt
