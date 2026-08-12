@@ -1,0 +1,91 @@
+name: Auto Build and Release
+
+on:
+  push:
+    branches:
+      - master # 如果你的默认分支是 master，请修改这里
+    # paths:
+    #   - 'modernz/**'
+    #   - 'uosc/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Version and Release Notes
+        id: release_info
+        run: |
+          # 获取上一个 Tag，如果没有则从 v1.0.0 开始
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+          echo "Last Tag: $LAST_TAG"
+
+          # 自动递增版本号（假设格式为 v主版本.次版本.修订号）
+          VERSION_NUM=${LAST_TAG#v}
+          IFS='.' read -r major minor patch <<< "$VERSION_NUM"
+          NEW_PATCH=$((patch + 1))
+          NEW_TAG="v$major.$minor.$NEW_PATCH"
+          echo "New Tag: $NEW_TAG"
+          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_OUTPUT
+
+          # 获取自上一个 Tag 以来的 Commit 日志
+          if [ "$LAST_TAG" = "v1.0.0" ] && ! git rev-parse "$LAST_TAG" >/dev/null 2>&1; then
+            COMMITS=$(git log --pretty=format:"- %s")
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s")
+          fi
+
+          # 如果没有新的 commit，给个默认提示
+          if [ -z "$COMMITS" ]; then
+            COMMITS="- 自动更新配置与脚本"
+          fi
+
+          # 组合固定的前缀文案和日志内容
+          {
+            echo "### 两套主题皮肤：`modernz`和`uosc`
+            echo "- 请选择喜欢的某一套下载即可"
+            echo "- 已包含所有配置文件，解压放到配置文件夹下即可"
+            echo "- 👉 [使用教程](https://github.com/akFace/mpv.config#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95)"
+            echo ""
+            echo "本次更新内容如下："
+            echo ""
+            echo "$COMMITS"
+          } > release_body.txt
+
+      - name: Create ZIP Archives
+        run: |
+          # 检查并打包 modernz
+          if [ -d "modernz" ]; then
+            zip -r modernz.zip modernz
+          else
+            echo "Error: modernz directory not found!"
+            exit 1
+          fi
+
+          # 检查并打包 uosc
+          if [ -d "uosc" ]; then
+            zip -r uosc.zip uosc
+          else
+            echo "Error: uosc directory not found!"
+            exit 1
+          fi
+
+      - name: Create Git Tag and Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_info.outputs.NEW_TAG }}
+          name: "Release ${{ steps.release_info.outputs.NEW_TAG }}"
+          body_path: release_body.txt
+          files: |
+            modernz.zip
+            uosc.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
