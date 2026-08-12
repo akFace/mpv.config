@@ -79,20 +79,19 @@ jobs:
 
       - name: Create ZIP Archives
         run: |
-          if [ -d "modernz" ]; then
-            zip -r modernz.zip modernz
-          else
-            echo "Error: modernz directory not found!"
-            exit 1
-          fi
-
-
-          if [ -d "uosc" ]; then
-            zip -r uosc.zip uosc
-          else
-            echo "Error: uosc directory not found!"
-            exit 1
-          fi
+          # 检查配置文件是否存在并复制到对应文件夹
+          for folder in modernz uosc; do
+            if [ -d "$folder" ]; then
+              [ -f "mpv.conf" ] && cp mpv.conf "$folder/"
+              [ -f "input.conf" ] && cp input.conf "$folder/"
+              
+              # 打包对应文件夹
+              zip -r "$folder.zip" "$folder"
+            else
+              echo "Error: $folder directory not found!"
+              exit 1
+            fi
+          done
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
