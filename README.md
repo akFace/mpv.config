@@ -11,6 +11,7 @@
 - 支持全网弹幕加载，集成插件：[Tony15246/uosc_danmaku]
 - 集成 Anime4K 超分超清画质，提升画质：[Anime4K](https://github.com/bloc97/Anime4K)
 - 支持插帧模式功能，提升流畅度
+- 可视化调节均衡器：[equalizer-gui](https://github.com/akFace/equalizer-gui)
 - 快捷键优化
 - 超简单，只需两个步骤即可完成享用
 - [>>查看主题预览效果截图](https://github.com/akFace/mpv.config#%E9%A2%84%E8%A7%88%E6%95%88%E6%9E%9C%E5%9B%BE)
@@ -51,6 +52,7 @@
 `Ctrl+-` 画面缩放：缩小  
 `Ctrl++` 画面缩放：放大  
 `a` 画面纵横比例  
+`e` 打开可视化调节均衡器面板  
 `t` 统计显示信息（文件、解码、滤镜信息等）  
 `]` 播放倍速+  
 `[` 播放倍速-  
@@ -98,7 +100,7 @@
   `Alt+11` Anime4K: Mode B+B (Fast)  
   `Alt+F12` Anime4K: Mode C+A (Fast)
 
-### 一些常用设置（可选）
+### 一些常用设置&文档（可选）
 
 - 弹幕默认样式在配置文件夹`script-opts/uosc_danmaku.conf`下，要修改请使用文本编辑器打开编辑
 - 弹幕相关配置：[查看文档](https://github.com/Tony15246/uosc_danmaku#%E7%9B%AE%E5%BD%95)
@@ -106,6 +108,9 @@
 - 跳过片头片尾：在配置文件夹中`mpv.conf`,打开编辑，可看到注释的跳过片头片尾，把注释的#号去掉，填写上自定义的片头片尾时间重启播放器即可
 - **推荐：** 油猴脚本 👉 [play-with-mpv 使用 mpv 播放网页中的视频](https://github.com/akFace/play-with-mpv)
 - 语言/language：modernz 主题皮肤语言设置在`script-opts/modernz.conf`，uosc 主题皮肤语言设置在`script-opts/uosc.conf`，文件中搜索 language 关键字就能看到
+- [uosc](https://github.com/tomasklaen/uosc)
+- [ModernZ](https://github.com/Samillion/ModernZ)
+- [equalizer-gui 均衡器](https://github.com/akFace/equalizer-gui)
 
 ## 如何更新到最新版
 
@@ -121,3 +126,7 @@
 ### 主题皮肤 2（uosc）
 
 ![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-03-18_16-51-00.jpg)
+
+### 均衡器效果
+
+![alt text](https://github.com/akFace/equalizer-gui/raw/main/images/Snipaste_2026-08-13_18-08-43.jpg)
