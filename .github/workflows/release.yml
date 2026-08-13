@@ -97,7 +97,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release_info.outputs.NEW_TAG }}
-          name: "Release ${{ steps.release_info.outputs.NEW_TAG }}"
+          name: ${{ steps.release_info.outputs.NEW_TAG }}
           body_path: release_body.txt
           files: |
             modernz.zip
