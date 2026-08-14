@@ -536,7 +536,8 @@ toggle_ui = function()
 end
 
 -- 打开/关闭 快捷键
-mp.add_key_binding("e", "toggle-equalizer-gui", toggle_ui)
+mp.register_script_message("toggle-equalizer-gui", toggle_ui)
+-- mp.add_key_binding("e", "toggle-equalizer-gui", toggle_ui)
 mp.add_key_binding("ESC", "close-equalizer-gui", function()
     if is_visible then toggle_ui() end
 end)

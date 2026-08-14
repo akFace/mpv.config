@@ -11,11 +11,11 @@
 - 支持全网弹幕加载，集成插件：[Tony15246/uosc_danmaku]
 - 集成 Anime4K 超分超清画质，提升画质：[Anime4K](https://github.com/bloc97/Anime4K)
 - 支持插帧模式功能，提升流畅度
-- 可视化调节均衡器：[equalizer-gui](https://github.com/akFace/equalizer-gui)
+- 可视化调节均衡器：[Equalizer-gui](https://github.com/akFace/equalizer-gui)
 - 快捷键优化
 - 超简单，只需两个步骤即可完成享用
 - [>>查看主题预览效果截图](https://github.com/akFace/mpv.config#%E9%A2%84%E8%A7%88%E6%95%88%E6%9E%9C%E5%9B%BE)
-- [>>常见相关问题](https://github.com/akFace/mpv.config#%E4%B8%80%E4%BA%9B%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE%E5%8F%AF%E9%80%89)
+- [>>常见相关问题](https://github.com/akFace/mpv.config#一些常用设置文档可选)
 
 ## 使用方法
 
@@ -39,7 +39,7 @@
       └── input.conf
 ```
 
-- 若你使用的并非 mpv.net 播放器，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpvnet`改为`mpv_path=mpv`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
+> ⚠️ **提示**：若你使用的并非 mpv.net 播放器，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpvnet`改为`mpv_path=mpv`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
 
 ## 常用快捷键
 
@@ -107,10 +107,10 @@
 - **关于弹幕流畅度问题**，目前本人的设备屏幕是 4k60hz，要打开`video-sync=display-resample`才流畅，但有些用户的设备打开此设置开倍速播放会导致声音卡问题，因此现在默认关闭，需要设置的请打开 mpv.conf 文件编辑，删除此行代码最前面的 # 号
 - 跳过片头片尾：在配置文件夹中`mpv.conf`,打开编辑，可看到注释的跳过片头片尾，把注释的#号去掉，填写上自定义的片头片尾时间重启播放器即可
 - **推荐：** 油猴脚本 👉 [play-with-mpv 使用 mpv 播放网页中的视频](https://github.com/akFace/play-with-mpv)
-- 语言/language：modernz 主题皮肤语言设置在`script-opts/modernz.conf`，uosc 主题皮肤语言设置在`script-opts/uosc.conf`，文件中搜索 language 关键字就能看到
-- [uosc](https://github.com/tomasklaen/uosc)
+- 语言/language: The language setting for the modernz theme is in `script-opts/modernz.conf`, and the language setting for the uosc theme is in `script-opts/uosc.conf`. You can see it by searching for the keyword `language` in the file.，Download `input-en.conf` and rename it to `input.conf`, then replace the original file
+- [Uosc](https://github.com/tomasklaen/uosc)
 - [ModernZ](https://github.com/Samillion/ModernZ)
-- [equalizer-gui 均衡器](https://github.com/akFace/equalizer-gui)
+- [Equalizer-gui 均衡器](https://github.com/akFace/equalizer-gui)
 
 ## 如何更新到最新版
 
