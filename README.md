@@ -12,6 +12,7 @@
 - 集成 Anime4K 超分超清画质，提升画质：[Anime4K](https://github.com/bloc97/Anime4K)
 - 支持插帧模式功能，提升流畅度
 - 可视化调节均衡器：[Equalizer-gui](https://github.com/akFace/equalizer-gui)
+- 功能强大的右键菜单
 - 快捷键优化
 - 超简单，只需两个步骤即可完成享用
 - [>>查看主题预览效果截图](https://github.com/akFace/mpv.config#%E9%A2%84%E8%A7%88%E6%95%88%E6%9E%9C%E5%9B%BE)
@@ -126,6 +127,11 @@
 ### 主题皮肤 2（uosc）
 
 ![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-03-18_16-51-00.jpg)
+
+### 功能强大的右键菜单
+
+![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-08-15_00-09-37.jpg)
+![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-08-15_00-10-09.jpg)
 
 ### 均衡器效果
 
