@@ -15,7 +15,7 @@
 - 快捷键优化
 - 超简单，只需两个步骤即可完成享用
 - [>>查看主题预览效果截图](https://github.com/akFace/mpv.config#%E9%A2%84%E8%A7%88%E6%95%88%E6%9E%9C%E5%9B%BE)
-- [>>常见相关问题](https://github.com/akFace/mpv.config#%E4%B8%80%E4%BA%9B%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE%E5%8F%AF%E9%80%89)
+- [>>常见相关问题](https://github.com/akFace/mpv.config#一些常用设置文档可选)
 
 ## 使用方法
 
