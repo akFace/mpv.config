@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - master
-    paths:
-      - "**" # 所有文件变更都会触发
     paths-ignore: # 但排除以下文件
       - "README.md"
       - "preview/**" # 排除 preview 目录
