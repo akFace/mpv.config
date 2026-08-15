@@ -42,64 +42,7 @@
 
 > ⚠️ **提示**：若你使用的并非 mpv.net 播放器，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpvnet`改为`mpv_path=mpv`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
 
-## 常用快捷键
-
-`Alt + f` 搜索字幕  
-`Ctrl+d` 搜索弹幕  
-`d` 显示/隐藏弹幕  
-`Alt+d` 打开弹幕总开关菜单  
-`Alt+z` 显示/隐藏 OSD（右上角信息：包括视频时间进度、系统时间）  
-`Ctrl+t` 置顶窗口  
-`Ctrl+-` 画面缩放：缩小  
-`Ctrl++` 画面缩放：放大  
-`a` 画面纵横比例  
-`e` 打开可视化调节均衡器面板  
-`t` 统计显示信息（文件、解码、滤镜信息等）  
-`l` A-B 循环播放（小写的 L）  
-`m` 静音  
-`]` 播放倍速+  
-`[` 播放倍速-  
-`Enter` 全屏/退出全屏  
-`↑` 音量+  
-`↓` 音量-  
-`→` 快进  
-`←` 快退  
-`<` 上一帧  
-`>` 下一帧  
-`鼠标滚轮键/空格` 暂停/播放  
-`鼠标左键` 在画面中间处按住拖动窗口  
-`Ctrl + i` 查看和设置所有快捷键 (仅 mpvnet 有效)
-
-- 其他快捷键请看这里：[快捷键大全](https://zhuanlan.zhihu.com/p/533804122)
-
-### 超帧插帧开启快捷键
-
-`n` 键，默认关闭插帧，连按循环：`关闭插帧` ➜ `电影模式` ➜ `动漫模式` ➜ `极致丝滑`
-
-- 说明：`电影模式`（去抖动，零模糊）、`动漫模式`：sphinx 配合 0.65 模糊度，既丝滑又能收紧二次元的线条，不发糊、`极致丝滑`：bicubic 默认稍糊，设定为 -0.40 稍微锐化一下，压制过度黏糊感
-- 本配置使用 mpv 内置时间轴插帧（interpolation=yes）—— 根据网上 AI 结论：最推荐，综合体验最好，适合大部分硬件设备。[如果需要其他插帧方式，可询问 AI，方法也很简单]
-- 结合 Anime4K 超分画质达到最佳观影体验
-
-### Anime4K 超分画质开启快捷键
-
-`Alt+del` 关闭 Anime4K，默认关闭
-
-- 不同的模式有不同的效果，建议自行 AI 查询效果，看动漫强烈建议开启超分画质功能，效果十分明显
-- 适用显卡 GPU: (Eg. GTX 1080, RTX 2070, RTX 3060, RX 590, Vega 56, 5700XT, 6600XT) 以上  
-  `Alt+F1` Anime4K: Mode A (HQ)  
-  `Alt+F2` Anime4K: Mode B (HQ)  
-  `Alt+F3` Anime4K: Mode C (HQ)  
-  `Alt+F4` Anime4K: Mode A+A (HQ)  
-  `Alt+F5` Anime4K: Mode B+B (HQ)  
-  `Alt+F6` Anime4K: Mode C+A (HQ)
-
-- 适用显卡 GPU: (Eg. GTX 980, GTX 1060, RX 570) 以下  
-  `Alt+F7` Anime4K: Mode A (Fast)  
-  `Alt+F8` Anime4K: Mode B (Fast)  
-  `Alt+F9` Anime4K: Mode C (Fast)  
-  `Alt+F10` Anime4K: Mode A+A (Fast)  
-  `Alt+11` Anime4K: Mode B+B (Fast)  
-  `Alt+F12` Anime4K: Mode C+A (Fast)
+### **[👉 常用快捷键](https://github.com/akFace/mpv.config/wiki/%E5%BF%AB%E6%8D%B7%E9%94%AE)**
 
 ### 一些常用设置&文档（可选）
 
@@ -108,10 +51,10 @@
 - **关于弹幕流畅度问题**，目前本人的设备屏幕是 4k60hz，要打开`video-sync=display-resample`才流畅，但有些用户的设备打开此设置开倍速播放会导致声音卡问题，因此现在默认关闭，需要设置的请打开 mpv.conf 文件编辑，删除此行代码最前面的 # 号
 - 跳过片头片尾：在配置文件夹中`mpv.conf`,打开编辑，可看到注释的跳过片头片尾，把注释的#号去掉，填写上自定义的片头片尾时间重启播放器即可
 - **推荐：** 油猴脚本 👉 [play-with-mpv 使用 mpv 播放网页中的视频](https://github.com/akFace/play-with-mpv)
-- [Uosc](https://github.com/tomasklaen/uosc)
-- [ModernZ](https://github.com/Samillion/ModernZ)
-- [Equalizer-gui 均衡器](https://github.com/akFace/equalizer-gui)
-- 语言/language: The language setting for the modernz theme is in `script-opts/modernz.conf`, and the language setting for the uosc theme is in `script-opts/uosc.conf`. You can see it by searching for the keyword `language` in the file.，Download `input-en.conf` and rename it to `input.conf`, then replace the original file
+- [UOSC 主题](https://github.com/tomasklaen/uosc)
+- [ModernZ 主题](https://github.com/Samillion/ModernZ)
+- [Equalizer-GUI 均衡器](https://github.com/akFace/equalizer-gui)
+- **语言/language:** The language setting for the modernz theme is in `script-opts/modernz.conf`, and the language setting for the uosc theme is in `script-opts/uosc.conf`. You can see it by searching for the keyword `language` in the file.，Download `input-en.conf` and rename it to `input.conf`, then replace the original file
 
 ## 如何更新到最新版
 
