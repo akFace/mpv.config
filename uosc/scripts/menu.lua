@@ -12,15 +12,26 @@ local utils = require('mp.utils')
 
 local o = {
     font = '',
+    font_name = '',
     font_size = 22,
+    bold = false,
+    italic = false,
     background = '#303030',
     border = '#6F6F6F',
     text = '#F2F2F2',
     disabled_text = '#8A8A8A',
     hover = '#4E4E4E',
+    hover_bg = '',
+    hover_text = '',
+    hover_corner_radius = 7,
     shortcut = '#D0D0D0',
+    hover_shortcut = '',
     separator = '#BEBEBE',
     submenu_arrow = '#F0F0F0',
+    arrow = '',
+    arrow_alpha = 0,
+    hover_arrow = '',
+    hover_arrow_alpha = 0,
     check = '#F0F0F0',
     shadow = '#000000',
     bg_alpha = 8,
@@ -63,7 +74,13 @@ local o = {
     modal_z = 1000000,
 }
 opts.read_options(o)
--- NOTE: script-opts/menu.conf overrides these defaults. Change font_size/row_height there.
+-- Style aliases for macOS-like menu.conf files.
+if o.font_name ~= '' then o.font = o.font_name end
+if o.hover_bg ~= '' then o.hover = o.hover_bg end
+if o.hover_text == '' then o.hover_text = o.text end
+if o.arrow ~= '' then o.submenu_arrow = o.arrow end
+if o.hover_arrow == '' then o.hover_arrow = o.submenu_arrow end
+if o.hover_shortcut == '' then o.hover_shortcut = o.shortcut end
 
 local platform = mp.get_property('platform') or ''
 if o.font == '' then
@@ -200,10 +217,13 @@ local function draw_line(x1,y1,x2,y2,color,alpha,width)
     return draw_path(p,color,alpha,width or 1,0)
 end
 
-local function text_tag(x,y,text,color,size,align)
+local function text_tag(x,y,text,color,size,align,bold,italic,alpha)
     local fn = o.font or ''
-    return string.format('{\\an%s\\pos(%.2f,%.2f)\\fn%s\\fs%.1f\\b0\\i0\\bord0\\shad0\\1c%s\\1a&H00&}%s',
-        align or '5', x,y,fn,size,ass_color(color),ass_text(text))
+    local b = bold == nil and o.bold or bold
+    local i = italic == nil and o.italic or italic
+    local a = alpha == nil and 0 or alpha
+    return string.format('{\\an%s\\pos(%.2f,%.2f)\\fn%s\\fs%.1f\\b%s\\i%s\\bord0\\shad0\\1c%s\\1a&H%02X&}%s',
+        align or '5', x,y,fn,size,b and '1' or '0',i and '1' or '0',ass_color(color),clamp(a,0,255),ass_text(text))
 end
 
 
@@ -589,13 +609,13 @@ local function draw_menu(list,x,y,level,ow,oh)
                     local sel_y = ry
                     local sel_w = w - 2*scale
                     local sel_h = g.h
-                    local square = string.format('m %.2f %.2f l %.2f %.2f l %.2f %.2f l %.2f %.2f c',
-                        sel_x,sel_y,sel_x+sel_w,sel_y,sel_x+sel_w,sel_y+sel_h,sel_x,sel_y+sel_h)
-                    row_out[#row_out+1]=draw_path(square,o.hover,0,0,0,o.hover)
+                    local hr = tonumber(o.hover_corner_radius or o.radius or 0) * scale
+                    row_out[#row_out+1]=draw_path(round_rect(sel_x,sel_y,sel_w,sel_h,hr),o.hover,0,
+                        (tonumber(o.hover_border_width) or 0)*scale,0,o.hover_border)
                 end
                 local title,shortcut=split_title(it.title)
                 local disabled=state_has(it,'disabled')
-                local c=disabled and o.disabled_text or o.text
+                local c=disabled and o.disabled_text or (ih and o.hover_text or o.text)
                 local px=o.padding_x*scale
                 local child_indent = (level > 1) and (o.child_indent_chars * o.font_size * scale) or (o.root_indent_chars * o.font_size * scale)
                 local text_y=ry+g.h/2
@@ -603,7 +623,7 @@ local function draw_menu(list,x,y,level,ow,oh)
                 local left_x=x+px+child_indent
                 local check_w=0
                 if state_has(it,'checked') then
-                    row_out[#row_out+1]=text_tag(left_x,text_y,'✓',disabled and o.disabled_text or o.check,fs-1*scale,'4')
+                    row_out[#row_out+1]=text_tag(left_x,text_y,'✓',disabled and o.disabled_text or (ih and o.hover_text or o.check),fs-1*scale,'4')
                     check_w=20*scale
                     left_x=left_x+check_w
                 end
@@ -632,11 +652,11 @@ local function draw_menu(list,x,y,level,ow,oh)
                 local display_title=truncate_text(title,math.max(1,right_edge-left_x),scale)
                 row_out[#row_out+1]=text_tag(left_x,text_y,display_title,c,fs,'4')
                 if shortcut ~= '' then
-                    row_out[#row_out+1]=text_tag(shortcut_x,text_y,shortcut,disabled and o.disabled_text or o.shortcut,fs,'4')
+                    row_out[#row_out+1]=text_tag(shortcut_x,text_y,shortcut,disabled and o.disabled_text or (ih and o.hover_shortcut or o.shortcut),fs,'4')
                 end
                 if it.type == 'submenu' then
                     local arrow_fs=o.arrow_font_size*scale
-                    row_out[#row_out+1]=text_tag(arrow_center,text_y,'›',o.submenu_arrow,arrow_fs,'5')
+                    row_out[#row_out+1]=text_tag(arrow_center,text_y,'›',ih and o.hover_arrow or o.submenu_arrow,arrow_fs,'5',nil,nil,ih and o.hover_arrow_alpha or o.arrow_alpha)
                 end
             end
             if #row_out > 0 then

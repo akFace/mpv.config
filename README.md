@@ -73,8 +73,12 @@
 
 ### 功能强大的右键菜单
 
+default：
 ![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-08-15_00-09-37.jpg)
-![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-08-15_00-10-09.jpg)
+macos-white：
+![image](https://github.com/akFace/mpv-menu-plugin-next/raw/main/doc/images/Snipaste_2026-08-16_01-04-38.jpg)
+macos-dark：
+![image](https://github.com/akFace/mpv-menu-plugin-next/raw/main/doc/images/Snipaste_2026-08-16_01-10-14.jpg)
 
 ### 可视化均衡器 eq
 

@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - master
-    paths-ignore: # 但排除以下文件
+    paths-ignore:
       - "README.md"
-      - "preview/**" # 排除 preview 目录
+      - "preview/**"
   workflow_dispatch:
 
 jobs:
@@ -37,7 +37,6 @@ jobs:
 
           echo "Last Tag: $LAST_TAG"
 
-
           # 自动递增版本号
           VERSION_NUM=${LAST_TAG#v}
           MAJOR_MINOR=${VERSION_NUM%.*}
@@ -50,7 +49,6 @@ jobs:
 
           echo "NEW_TAG=$NEW_TAG" >> "$GITHUB_OUTPUT"
 
-
           # 获取 Commit 日志
           if git rev-parse "$LAST_TAG" >/dev/null 2>&1; then
             COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s")
@@ -58,18 +56,17 @@ jobs:
             COMMITS=$(git log --pretty=format:"- %s")
           fi
 
-
           if [ -z "$COMMITS" ]; then
             COMMITS="- 自动更新配置与脚本"
           fi
 
-
           # 生成 Release 描述
           cat > release_body.txt <<EOF
-          ### 两套主题皮肤：\`modernz\` 和 \`uosc\`
+          ### 两套主题皮肤：\`modernz\` 和 \`uosc\` 多种菜单风格
 
           - 请选择喜欢的某一套下载即可
           - 已包含所有配置文件，解压放到配置文件夹下即可
+          - modernz_xxx.zip和uosc_xxx.zip 后缀为不同风格的右键菜单，功能一样。 👉 [右键菜单预览](https://github.com/akFace/mpv.config#%E5%8A%9F%E8%83%BD%E5%BC%BA%E5%A4%A7%E7%9A%84%E5%8F%B3%E9%94%AE%E8%8F%9C%E5%8D%95)
           - 👉 [使用教程](https://github.com/akFace/mpv.config#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95)
           - 关于弹幕流畅度问题，目前本人的设备屏幕是 4k60hz，要打开video-sync=display-resample才流畅，但有些用户的设备打开此设置开倍速播放会导致声音卡问题，因此现在默认关闭，需要设置的请打开 mpv.conf 文件编辑，删除此行代码最前面的 # 号
 
@@ -83,18 +80,39 @@ jobs:
 
       - name: Create ZIP Archives
         run: |
-          # 检查配置文件是否存在并复制到对应文件夹
-          for folder in modernz uosc; do
-            if [ -d "$folder" ]; then
-              [ -f "mpv.conf" ] && cp mpv.conf "$folder/"
-              [ -f "input.conf" ] && cp input.conf "$folder/"
-              
-              # 打包对应文件夹
-              zip -r "$folder.zip" "$folder"
-            else
-              echo "Error: $folder directory not found!"
+          # 检查皮肤目录是否存在
+          for skin in modernz uosc; do
+            if [ ! -d "$skin" ]; then
+              echo "Error: $skin directory not found!"
               exit 1
             fi
+          done
+
+          # 定义菜单配置 (suffix:config_file)
+          menu_configs=("default:menu-default.conf" "macos-white:menu-macos-white.conf" "macos-dark:menu-macos-dark.conf")
+          for entry in "${menu_configs[@]}"; do
+            suffix="${entry%:*}"
+            conf_file="${entry#*:}"
+            if [ ! -f "$conf_file" ]; then
+              echo "Warning: $conf_file not found, skipping this menu config"
+              continue
+            fi
+            for skin in modernz uosc; do
+              temp_dir="${skin}_${suffix}"
+              echo "Creating $temp_dir"
+              # 复制整个皮肤目录（包含所有子文件夹）
+              cp -r "$skin" "$temp_dir"
+              # 确保 script-opts 目录存在
+              mkdir -p "$temp_dir/script-opts"
+              # 复制菜单配置并覆盖（-f 强制覆盖）
+              cp -f "$conf_file" "$temp_dir/script-opts/menu.conf"
+              # 复制全局配置并覆盖（-f 强制覆盖）
+              cp -f mpv.conf input.conf "$temp_dir/"
+              # 打包
+              zip -r "${temp_dir}.zip" "$temp_dir"
+              # 清理临时目录
+              rm -rf "$temp_dir"
+            done
           done
 
       - name: Create GitHub Release
@@ -104,8 +122,7 @@ jobs:
           name: ${{ steps.release_info.outputs.NEW_TAG }}
           body_path: release_body.txt
           files: |
-            modernz.zip
-            uosc.zip
+            *.zip
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
