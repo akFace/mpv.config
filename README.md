@@ -11,8 +11,8 @@
 - 支持全网弹幕加载，集成插件：[Tony15246/uosc_danmaku]
 - 集成 Anime4K 超分超清画质，提升画质：[Anime4K](https://github.com/bloc97/Anime4K)
 - 支持插帧模式功能，提升流畅度
-- 可视化调节均衡器：[Equalizer-gui](https://github.com/akFace/equalizer-gui)
-- 功能强大的右键菜单
+- 可视化调节均衡器：[Equalizer-GUI](https://github.com/akFace/equalizer-gui)
+- 功能强大的跨平台右键菜单：[mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
 - 快捷键优化
 - 超简单，只需两个步骤即可完成享用
 - [>>查看主题预览效果截图](https://github.com/akFace/mpv.config#%E9%A2%84%E8%A7%88%E6%95%88%E6%9E%9C%E5%9B%BE)
@@ -20,7 +20,7 @@
 
 ## 使用方法
 
-- 先安装 mpv 或者 mpv.net 播放器 **(Windows 用户推荐下载 mpv.net)**，下载地址：[mpvnet-player](https://github.com/mpvnet-player/mpv.net/releases)，建议下载`setup-x64.exe`安装程序版本。||=>其他用户下载：[mpv 原生播放器](https://mpv.io/)
+- 先安装 mpv 或者 mpv.net 播放器 **(Windows 推荐 mpv.net)**，下载地址：[mpvnet-player](https://github.com/mpvnet-player/mpv.net/releases)，建议下载`setup-x64.exe`安装程序版本。||=>其他用户下载：[mpv 原生播放器](https://mpv.io/)
 - [🎯 点击下载](https://github.com/akFace/mpv.config/releases) 你想要的主题皮肤（每个都已包含完整配置）`modernz`和`uosc`，并解压，**以下 ① 和 ② 根据自己选择的播放器按对应教程来即可**
 - **①. mpv.net 播放器**：如图所示，右键>配置>打开配置文件夹或者`Ctrl + f`快捷键打开`配置文件夹`
 
@@ -55,6 +55,8 @@
 `a` 画面纵横比例  
 `e` 打开可视化调节均衡器面板  
 `t` 统计显示信息（文件、解码、滤镜信息等）  
+`l` A-B 循环播放（小写的 L）  
+`m` 静音  
 `]` 播放倍速+  
 `[` 播放倍速-  
 `Enter` 全屏/退出全屏  
@@ -62,8 +64,6 @@
 `↓` 音量-  
 `→` 快进  
 `←` 快退  
-`l` A-B 循环播放（小写的 L）  
-`m` 静音  
 `<` 上一帧  
 `>` 下一帧  
 `鼠标滚轮键/空格` 暂停/播放  
@@ -108,10 +108,10 @@
 - **关于弹幕流畅度问题**，目前本人的设备屏幕是 4k60hz，要打开`video-sync=display-resample`才流畅，但有些用户的设备打开此设置开倍速播放会导致声音卡问题，因此现在默认关闭，需要设置的请打开 mpv.conf 文件编辑，删除此行代码最前面的 # 号
 - 跳过片头片尾：在配置文件夹中`mpv.conf`,打开编辑，可看到注释的跳过片头片尾，把注释的#号去掉，填写上自定义的片头片尾时间重启播放器即可
 - **推荐：** 油猴脚本 👉 [play-with-mpv 使用 mpv 播放网页中的视频](https://github.com/akFace/play-with-mpv)
-- 语言/language: The language setting for the modernz theme is in `script-opts/modernz.conf`, and the language setting for the uosc theme is in `script-opts/uosc.conf`. You can see it by searching for the keyword `language` in the file.，Download `input-en.conf` and rename it to `input.conf`, then replace the original file
 - [Uosc](https://github.com/tomasklaen/uosc)
 - [ModernZ](https://github.com/Samillion/ModernZ)
 - [Equalizer-gui 均衡器](https://github.com/akFace/equalizer-gui)
+- 语言/language: The language setting for the modernz theme is in `script-opts/modernz.conf`, and the language setting for the uosc theme is in `script-opts/uosc.conf`. You can see it by searching for the keyword `language` in the file.，Download `input-en.conf` and rename it to `input.conf`, then replace the original file
 
 ## 如何更新到最新版
 
@@ -133,6 +133,6 @@
 ![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-08-15_00-09-37.jpg)
 ![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-08-15_00-10-09.jpg)
 
-### 均衡器效果
+### 可视化均衡器 eq
 
 ![alt text](https://github.com/akFace/equalizer-gui/raw/main/images/Snipaste_2026-08-13_18-08-43.jpg)

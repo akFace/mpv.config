@@ -10,7 +10,7 @@ local o = {
     uosc_syntax = false,     -- toggle uosc menu syntax support
     escape_title = true,     -- escape & to && in menu title
     max_title_length = 80,   -- limit the title length, set to 0 to disable.
-    max_playlist_items = 20, -- limit the playlist items in submenu, set to 0 to disable.
+    max_playlist_items = 0, -- show the full playlist; the menu renderer handles scrolling when it is too tall. The playlist submenu also shows current/total at the top.
 }
 opts.read_options(o)
 
@@ -371,17 +371,40 @@ end
 -- handle #@playlist menu update
 local function update_playlist_menu(menu)
     local submenu = to_submenu(menu.item)
-    local playlist = get('playlist', {})
-    if #playlist == 0 then return end
+    -- Clear previously generated playlist entries and metadata.
+    for i = #submenu, 1, -1 do submenu[i] = nil end
+    menu.item._playlist_header = nil
+    menu.item._playlist_current_menu_index = nil
+    menu.item._playlist_total = 0
+    menu.item._playlist_current_index = 0
 
-    local from, to = 1, #playlist
+    local playlist = get('playlist', {})
+    local total = #playlist
+    if total == 0 then return end
+
+    local pos = get('playlist-playing-pos', -1)
+    if type(pos) ~= 'number' or pos < 0 then
+        pos = get('playlist-pos', -1)
+    end
+    if type(pos) ~= 'number' then pos = -1 end
+
+    local current = (pos >= 0 and pos < total) and (pos + 1) or 0
+    -- Only show the current/total header when the playlist contains more than
+    -- one item. A single-item playlist does not need a redundant 1/1 header.
+    menu.item._playlist_header = (total > 1) and string.format('%d/%d', current, total) or nil
+    menu.item._playlist_current_index = current
+    menu.item._playlist_total = total
+
+    local from, to = 1, total
     if o.max_playlist_items > 0 then
-        local pos = get('playlist-playing-pos', -1)
-        if pos == -1 then pos = get('playlist-pos', -1) end
         local mid = math.floor(o.max_playlist_items / 2)
-        from, to = pos + 1 - mid, pos + (o.max_playlist_items - mid)
+        local center = current > 0 and current or 1
+        from, to = center - mid, center + (o.max_playlist_items - mid - 1)
         if from < 1 then from, to = 1, o.max_playlist_items end
-        if to > #playlist then from, to = #playlist - o.max_playlist_items + 1, #playlist end
+        if to > total then
+            to = total
+            from = math.max(1, total - o.max_playlist_items + 1)
+        end
     end
 
     if from > 1 then
@@ -394,17 +417,21 @@ local function update_playlist_menu(menu)
     for id = from, to do
         local item = playlist[id]
         if item then
-            submenu[#submenu + 1] = {
+            local generated_index = #submenu + 1
+            submenu[generated_index] = {
                 title = build_playlist_title(item, id - 1),
                 cmd = string.format('playlist-play-index %d', id - 1),
                 state = (item.playing or item.current) and { 'checked' } or {},
             }
+            if id == current then
+                menu.item._playlist_current_menu_index = generated_index
+            end
         end
     end
 
-    if to < #playlist then
+    if to < total then
         submenu[#submenu + 1] = {
-            title = string.format('...\t[%d]', #playlist - to),
+            title = string.format('...\t[%d]', total - to),
             cmd = has_uosc and 'script-message-to uosc playlist' or 'ignore',
         }
     end
@@ -536,6 +563,11 @@ local function load_dyn_menus()
     -- broadcast menu ready message
     mp.commandv('script-message', 'menu-ready', mp.get_script_name())
 end
+
+-- Called by menu.lua immediately before it snapshots the menu for display.
+-- Keeping this as a script-message avoids relying on the right-click binding
+-- being the only route by which the menu can be opened.
+mp.register_script_message('menu-refresh-dynamic', refresh_dynamic_menus)
 
 -- script message: get <keyword> <src>
 mp.register_script_message('get', function(keyword, src)

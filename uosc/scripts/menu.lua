@@ -1,4 +1,4 @@
--- mpv-menu-plugin: cross-platform mpv.net-inspired menu backend (v23)
+-- mpv-menu-plugin: cross-platform mpv.net-inspired menu backend (v43)
 -- Rendering model:
 --   * bind the ASS overlay canvas to the CURRENT valid OSD dimensions
 --   * never render while the OSD size is 0x0
@@ -43,11 +43,21 @@ local o = {
     min_width = 360,
     max_width = 640,
     max_visible_rows = 0,
-    hover_open_delay = 0.08,
+    scroll_threshold = 0.80,
+    scrollbar_width = 6,
+    scrollbar_gap = 4,
+    scrollbar_min_thumb = 24,
+    scrollbar_right_gap = 2,
+    scrollbar_track = '#555555',
+    scrollbar_thumb = '#222222',
+    scrollbar_track_alpha = 150,
+    scrollbar_thumb_alpha = 115,
+    scroll_step = 1,
     click_to_show_submenus = false,
     hide_root_separators = true,
     child_indent_chars = 2,
     root_indent_chars = 1.5,
+    playlist_header_indent_chars = 1,
     modal_mask = true,
     modal_mask_alpha = 255,
     modal_z = 1000000,
@@ -83,11 +93,13 @@ local open_path = {}
 local rects = {}
 local hover_level, hover_index = nil, nil
 local selected_level, selected_index = 1, nil
-local hover_deadline = nil
 local anchor_x, anchor_y = nil, nil
 local key_bindings = {}
+local scroll_offsets = {}
 local geometry_timer = nil
 local show_timer = nil
+local schedule_hover_open
+local last_osd_w, last_osd_h = 0, 0
 
 local function clamp(v, lo, hi)
     if v < lo then return lo end
@@ -306,8 +318,16 @@ local function menu_at(level)
     return cur
 end
 
+local function is_non_interactive(item)
+    return item and (item.type == 'separator' or item.type == 'header')
+end
+
 local function first_selectable(list)
-    for i,it in ipairs(list or {}) do if not is_hidden(it) and it.type ~= 'separator' and not state_has(it,'disabled') then return i end end
+    for i,it in ipairs(list or {}) do
+        if not is_hidden(it) and not is_non_interactive(it) and not state_has(it,'disabled') then
+            return i
+        end
+    end
     return nil
 end
 
@@ -317,59 +337,64 @@ local function next_selectable(list,idx,dir)
     for _=1,#list do
         i=i+dir
         if i<1 then i=#list elseif i>#list then i=1 end
-        if not is_hidden(list[i]) and list[i].type ~= 'separator' and not state_has(list[i],'disabled') then return i end
+        if not is_hidden(list[i]) and not is_non_interactive(list[i]) and not state_has(list[i],'disabled') then
+            return i
+        end
     end
     return nil
 end
 
-local function build_layout(list, scale, oh, level)
+local function get_playlist_header(list, level)
+    -- Playlist metadata is stored on the parent menu item, not on the
+    -- submenu array itself. mpv's native property serializer requires
+    -- submenu arrays to use numeric keys only; mixing string metadata keys
+    -- into the array causes 'key must be a string, but got number'.
+    if not level or level <= 1 then return nil end
+    local parent_list = menu_at(level - 1)
+    local parent_index = open_path[level - 1]
+    local parent = parent_list and parent_list[parent_index]
+    if parent and type(parent._playlist_header) == 'string' then
+        return parent._playlist_header
+    end
+    return nil
+end
+
+local function build_layout(list, scale, level)
     scale = scale or 1
     local layout = {}
     local desired_row_h = o.row_height * scale
-    local min_row_h = math.min(desired_row_h, o.min_row_height * scale)
+    local row_h = desired_row_h
     local sep_h = o.separator_height * scale
     local pad_y = o.padding_y * scale
     local top_pad = pad_y
     local bottom_pad = pad_y
+    local playlist_header = get_playlist_header(list, level)
+    local header_h = playlist_header and row_h or 0
 
     level = level or 1
-    local visible_rows = 0
-    local separators = 0
     for _, it in ipairs(list or {}) do
-        if not is_hidden(it) then
-            if it.type == 'separator' then
-                if not (level == 1 and o.hide_root_separators) then
-                    separators = separators + 1
-                end
-            else
-                visible_rows = visible_rows + 1
-            end
-        end
-    end
-
-    -- The menu must never silently drop later items when more dynamic entries
-    -- become available (e.g. tracks/chapters/playlist after file load).
-    -- Keep a fixed row height within each panel, but shrink the whole panel's
-    -- rows when necessary so the full menu still fits the current OSD.
-    local row_h = desired_row_h
-    if oh and oh > 0 and visible_rows > 0 then
-        local available = oh - 2 * (o.screen_margin * scale) - top_pad - bottom_pad - separators * sep_h
-        local fitted = available / visible_rows
-        if fitted < row_h then row_h = math.max(min_row_h, fitted) end
-    end
-
-    local total_h = top_pad
-    for idx, it in ipairs(list or {}) do
         if not is_hidden(it) then
             if not (it.type == 'separator' and level == 1 and o.hide_root_separators) then
                 local h = (it.type == 'separator') and sep_h or row_h
-                layout[#layout + 1] = { index = idx, y = total_h, h = h }
-                total_h = total_h + h
+                layout[#layout + 1] = { index = _, y = 0, h = h }
             end
         end
     end
+
+    local total_h = top_pad + header_h
+    for _, g in ipairs(layout) do
+        g.y = total_h
+        total_h = total_h + g.h
+    end
     total_h = total_h + bottom_pad
-    return layout, total_h, row_h
+    return layout, total_h, row_h, top_pad, bottom_pad, header_h
+end
+
+local function panel_max_height(oh, scale)
+    local margin = o.screen_margin * scale
+    local by_ratio = oh * tonumber(o.scroll_threshold or 0.80)
+    local by_bounds = math.max(1, oh - 2 * margin)
+    return math.max(1, math.min(by_ratio, by_bounds))
 end
 
 local function measure(list, ow, oh, level)
@@ -394,8 +419,60 @@ local function measure(list, ow, oh, level)
         end
     end
     maxw = clamp(maxw, min_w, math.min(max_w, max_screen_w))
-    local layout,h = build_layout(list, scale, oh, level)
-    return maxw,h,layout,scale
+
+    local layout, desired_h, row_h, top_pad, bottom_pad, header_h = build_layout(list, scale, level)
+    local playlist_header = get_playlist_header(list, level)
+    if playlist_header then
+        maxw = math.max(maxw, text_width(playlist_header, scale) + px * 2)
+    end
+    local max_h = panel_max_height(oh, scale)
+    local scrollable = desired_h > max_h + 0.01
+    local h = scrollable and max_h or desired_h
+    local max_scroll = math.max(0, desired_h - h)
+    local scroll_offset = clamp(tonumber(scroll_offsets[level]) or 0, 0, max_scroll)
+    if not scrollable then
+        scroll_offset = 0
+        scroll_offsets[level] = 0
+    else
+        scroll_offsets[level] = scroll_offset
+    end
+    local meta = {
+        scrollable = scrollable,
+        scroll_offset = scroll_offset,
+        max_scroll = max_scroll,
+        row_h = row_h,
+        top_pad = top_pad,
+        bottom_pad = bottom_pad,
+        header_h = header_h,
+        content_h = math.max(1, h - top_pad - bottom_pad - header_h),
+        desired_h = desired_h,
+        scrollbar_width = o.scrollbar_width * scale,
+        scrollbar_gap = o.scrollbar_gap * scale,
+        scrollbar_right_gap = o.scrollbar_right_gap * scale,
+    }
+    return maxw,h,layout,scale,meta
+end
+
+local function ensure_visible(level, index)
+    local r = rects[level]
+    if not r or not r.scrollable then return end
+    local g
+    for _, item in ipairs(r.layout or {}) do
+        if item.index == index then g=item; break end
+    end
+    if not g then return end
+    local top = r.top_pad + (r.header_h or 0)
+    local bottom = r.h - r.bottom_pad
+    local offset = r.scroll_offset or 0
+    local top_screen = g.y - offset
+    local bottom_screen = g.y + g.h - offset
+    if top_screen < top then
+        offset = g.y - top
+    elseif bottom_screen > bottom then
+        offset = g.y + g.h - bottom
+    end
+    r.scroll_offset = clamp(offset, 0, r.max_scroll or 0)
+    scroll_offsets[level] = r.scroll_offset
 end
 
 local function hit_test(x,y)
@@ -403,8 +480,18 @@ local function hit_test(x,y)
         local r = rects[level]
         if r and x>=r.x and x<=r.x+r.w and y>=r.y and y<=r.y+r.h then
             local ly = y-r.y
+            if r.scrollable then
+                local sbw = r.scrollbar_width or 0
+                local sbg = r.scrollbar_gap or 0
+                local sb_left = r.x + r.w - r.padding_x - sbg - sbw
+                if x >= sb_left - sbg and x <= r.x + r.w then
+                    return level,nil
+                end
+            end
             for _,g in ipairs(r.layout) do
-                if ly >= g.y and ly < g.y + g.h then
+                local gy = r.top_pad + g.y - r.top_pad - (r.scroll_offset or 0)
+                -- g.y is in panel coordinates; subtract the current scroll offset.
+                if ly >= gy and ly < gy + g.h then
                     if r.items[g.index].type == 'separator' then return level,nil end
                     return level,g.index
                 end
@@ -413,6 +500,28 @@ local function hit_test(x,y)
         end
     end
     return nil,nil
+end
+
+local function panel_level_at(x,y)
+    for level=#rects,1,-1 do
+        local r=rects[level]
+        if r and x>=r.x and x<=r.x+r.w and y>=r.y and y<=r.y+r.h then
+            return level,r
+        end
+    end
+    return nil,nil
+end
+
+local function scroll_panel(level, delta)
+    local r=rects[level]
+    if not r or not r.scrollable then return false end
+    local step = (r.row_h or o.row_height) * tonumber(o.scroll_step or 1)
+    if step <= 0 then step = r.row_h or 1 end
+    local new_offset = clamp((r.scroll_offset or 0) + delta*step, 0, r.max_scroll or 0)
+    if math.abs(new_offset - (r.scroll_offset or 0)) < 0.01 then return false end
+    r.scroll_offset = new_offset
+    scroll_offsets[level] = new_offset
+    return true
 end
 
 local function draw_modal_mask(ow, oh)
@@ -426,99 +535,131 @@ local function draw_modal_mask(ow, oh)
 end
 
 local function draw_menu(list,x,y,level,ow,oh)
-    local w,h,layout,scale = measure(list,ow,oh,level)
+    local w,h,layout,scale,meta = measure(list,ow,oh,level)
     local margin = o.screen_margin * scale
     x=clamp(x,margin,ow-w-margin)
     y=clamp(y,margin,oh-h-margin)
-    rects[level]={x=x,y=y,w=w,h=h,items=list,layout=layout,scale=scale}
+    rects[level]={
+        x=x,y=y,w=w,h=h,items=list,layout=layout,scale=scale,
+        scrollable=meta.scrollable,scroll_offset=meta.scroll_offset,max_scroll=meta.max_scroll,
+        row_h=meta.row_h,top_pad=meta.top_pad,bottom_pad=meta.bottom_pad,header_h=meta.header_h or 0,content_h=meta.content_h,
+        scrollbar_width=meta.scrollbar_width,scrollbar_gap=meta.scrollbar_gap,padding_x=o.padding_x*scale,
+    }
     local out={}
     local radius=o.radius*scale
     out[#out+1] = draw_path(round_rect(x+2*scale,y+3*scale,w,h,radius),o.shadow,85,0,4*scale,o.shadow)
     out[#out+1] = draw_path(round_rect(x,y,w,h,radius),o.background,o.bg_alpha,o.border_width*scale,0,o.border)
+
+    local content_top = y + meta.top_pad + (meta.header_h or 0)
+    local content_bottom = y + h - meta.bottom_pad
+    local scroll_offset = meta.scroll_offset or 0
+
+    local playlist_header = get_playlist_header(list, level)
+    if meta.header_h and meta.header_h > 0 and playlist_header then
+        local header_y = y + meta.top_pad + meta.header_h / 2
+        local header_indent = o.playlist_header_indent_chars * o.font_size * scale
+        local header_x = x + o.padding_x*scale + header_indent
+        out[#out+1] = text_tag(header_x, header_y, playlist_header, o.text, o.font_size*scale, '4')
+        -- mpv.net-style header separator: the left edge follows the text
+        -- indentation, while the right edge remains aligned with the panel.
+        local line_y = y + meta.top_pad + meta.header_h - 0.5*scale
+        local line_right = x + w - o.padding_x*scale
+        out[#out+1] = draw_line(header_x, line_y, line_right, line_y, o.separator, 110, math.max(1,scale))
+    end
+
     for _,g in ipairs(layout) do
         local idx = g.index
         local it = list[idx]
-        local ry = y + g.y
-        if it.type == 'separator' then
-            local sy = ry + g.h/2
-            -- Child-menu separators: their LEFT edge aligns with the indented text area,
-            -- while the RIGHT edge stays flush with the panel's content edge (no right indent),
-            -- matching mpv.net's layout.
-            local indent = (level > 1) and (o.child_indent_chars * o.font_size * scale) or 0
-            local sep_left = x + o.padding_x * scale + indent
-            local sep_right = x + w - 1 * scale
-            out[#out+1]=draw_line(sep_left,sy,sep_right,sy,o.separator,110,math.max(1,scale))
-        else
-            -- mpv.net-style selection: a flat rectangle, never rounded.
-            -- Keep every open ancestor highlighted while a child submenu is active.
-            -- mpv.net behavior: only the item under the mouse is hover-highlighted.
-            -- Once a submenu is open, keep only the actual ancestor item for that
-            -- submenu highlighted as part of the active path. Do not persist a
-            -- keyboard selection highlight after merely moving the mouse.
-            local path_selected = (open_path[level] == idx)
-            local path_hovered = (hover_level == level and hover_index == idx)
-            local ih = path_selected or path_hovered
-            if ih then
-                local sel_x = x + 1*scale
-                local sel_y = ry
-                local sel_w = w - 2*scale
-                local sel_h = g.h
-                local square = string.format('m %.2f %.2f l %.2f %.2f l %.2f %.2f l %.2f %.2f c',
-                    sel_x,sel_y,sel_x+sel_w,sel_y,sel_x+sel_w,sel_y+sel_h,sel_x,sel_y+sel_h)
-                out[#out+1]=draw_path(square,o.hover,0,0,0,o.hover)
-            end
-            local title,shortcut=split_title(it.title)
-            local disabled=state_has(it,'disabled')
-            local c=disabled and o.disabled_text or o.text
-            local px=o.padding_x*scale
-            local child_indent = (level > 1) and (o.child_indent_chars * o.font_size * scale) or (o.root_indent_chars * o.font_size * scale)
-            local text_y=ry+g.h/2
-            local fs=o.font_size*scale
-            local left_x=x+px+child_indent
-            local right_x=x+w-px
-            local check_w=0
-            if state_has(it,'checked') then
-                out[#out+1]=text_tag(left_x,text_y,'✓',disabled and o.disabled_text or o.check,fs-1*scale,'4')
-                check_w=20*scale
-                left_x=left_x+check_w
-            end
-            local right_edge = x + w - o.padding_x * scale
-            local arrow_center = nil
-            local shortcut_x = nil
-            local shortcut_w = shortcut ~= '' and text_width(shortcut, scale) or 0
-
-            -- mpv.net ordering: shortcut is immediately to the LEFT of the submenu arrow.
-            -- For items without a submenu, the shortcut remains right-aligned to the panel edge.
-            if it.type == 'submenu' then
-                arrow_center = right_edge - (o.arrow_width * scale) / 2
-                local arrow_left = right_edge - o.arrow_width * scale
-                if shortcut ~= '' then
-                    shortcut_x = arrow_left - o.shortcut_gap * scale - shortcut_w
-                    right_x = shortcut_x - o.shortcut_gap * scale
-                else
-                    right_x = arrow_left - o.shortcut_gap * scale
-                end
+        local ry = y + g.y - scroll_offset
+        if ry + g.h >= content_top and ry <= content_bottom then
+            local row_out = {}
+            local clip_tag = string.format('{\\clip(%.2f,%.2f,%.2f,%.2f)}', x, content_top, x+w, content_bottom)
+            if it.type == 'separator' then
+                local sy = ry + g.h/2
+                local indent = (level > 1) and (o.child_indent_chars * o.font_size * scale) or 0
+                local sep_left = x + o.padding_x * scale + indent
+                local sep_right = x + w - 1 * scale
+                row_out[#row_out+1]=draw_line(sep_left,sy,sep_right,sy,o.separator,110,math.max(1,scale))
             else
-                if shortcut ~= '' then
-                    shortcut_x = right_edge - shortcut_w
-                    right_x = shortcut_x - o.shortcut_gap * scale
+                local path_selected = (open_path[level] == idx)
+                local path_hovered = (hover_level == level and hover_index == idx)
+                local ih = path_selected or path_hovered
+                if ih then
+                    local sel_x = x + 1*scale
+                    local sel_y = ry
+                    local sel_w = w - 2*scale
+                    local sel_h = g.h
+                    local square = string.format('m %.2f %.2f l %.2f %.2f l %.2f %.2f l %.2f %.2f c',
+                        sel_x,sel_y,sel_x+sel_w,sel_y,sel_x+sel_w,sel_y+sel_h,sel_x,sel_y+sel_h)
+                    row_out[#row_out+1]=draw_path(square,o.hover,0,0,0,o.hover)
+                end
+                local title,shortcut=split_title(it.title)
+                local disabled=state_has(it,'disabled')
+                local c=disabled and o.disabled_text or o.text
+                local px=o.padding_x*scale
+                local child_indent = (level > 1) and (o.child_indent_chars * o.font_size * scale) or (o.root_indent_chars * o.font_size * scale)
+                local text_y=ry+g.h/2
+                local fs=o.font_size*scale
+                local left_x=x+px+child_indent
+                local check_w=0
+                if state_has(it,'checked') then
+                    row_out[#row_out+1]=text_tag(left_x,text_y,'✓',disabled and o.disabled_text or o.check,fs-1*scale,'4')
+                    check_w=20*scale
+                    left_x=left_x+check_w
+                end
+                local right_edge = x + w - o.padding_x * scale
+                if meta.scrollable then
+                    right_edge = right_edge - meta.scrollbar_width - meta.scrollbar_gap
+                end
+                local arrow_center = nil
+                local shortcut_x = nil
+                local shortcut_w = shortcut ~= '' and text_width(shortcut, scale) or 0
+                if it.type == 'submenu' then
+                    arrow_center = right_edge - (o.arrow_width * scale) / 2
+                    local arrow_left = right_edge - o.arrow_width * scale
+                    if shortcut ~= '' then
+                        shortcut_x = arrow_left - o.shortcut_gap * scale - shortcut_w
+                        right_edge = shortcut_x - o.shortcut_gap * scale
+                    else
+                        right_edge = arrow_left - o.shortcut_gap * scale
+                    end
                 else
-                    right_x = right_edge
+                    if shortcut ~= '' then
+                        shortcut_x = right_edge - shortcut_w
+                        right_edge = shortcut_x - o.shortcut_gap * scale
+                    end
+                end
+                local display_title=truncate_text(title,math.max(1,right_edge-left_x),scale)
+                row_out[#row_out+1]=text_tag(left_x,text_y,display_title,c,fs,'4')
+                if shortcut ~= '' then
+                    row_out[#row_out+1]=text_tag(shortcut_x,text_y,shortcut,disabled and o.disabled_text or o.shortcut,fs,'4')
+                end
+                if it.type == 'submenu' then
+                    local arrow_fs=o.arrow_font_size*scale
+                    row_out[#row_out+1]=text_tag(arrow_center,text_y,'›',o.submenu_arrow,arrow_fs,'5')
                 end
             end
-
-            local display_title=truncate_text(title,math.max(1,right_x-left_x),scale)
-            out[#out+1]=text_tag(left_x,text_y,display_title,c,fs,'4')
-            if shortcut ~= '' then
-                out[#out+1]=text_tag(shortcut_x,text_y,shortcut,disabled and o.disabled_text or o.shortcut,fs,'4')
-            end
-            if it.type == 'submenu' then
-                local arrow_fs=o.arrow_font_size*scale
-                -- Keep the chevron visually larger than normal text; some CJK fonts
-                -- have generous glyph metrics, so use a dedicated larger size.
-                out[#out+1]=text_tag(arrow_center,text_y,'›',o.submenu_arrow,arrow_fs,'5')
+            if #row_out > 0 then
+                for _, line in ipairs(row_out) do out[#out+1] = clip_tag .. line end
             end
         end
+    end
+
+    if meta.scrollable then
+        -- Keep the scrollbar visually attached to the panel's right border.
+        -- The text/content area still reserves scrollbar_gap on its right side.
+        local track_x = x + w - meta.scrollbar_width - meta.scrollbar_right_gap
+        local track_y = content_top
+        local track_h = math.max(1, content_bottom - content_top)
+        local total_content_h = math.max(track_h, meta.desired_h - meta.top_pad - meta.bottom_pad - (meta.header_h or 0))
+        local thumb_h = math.max(o.scrollbar_min_thumb*scale, track_h * (track_h / total_content_h))
+        thumb_h = math.min(track_h, thumb_h)
+        local travel = math.max(0, track_h - thumb_h)
+        local ratio = (meta.max_scroll > 0) and (meta.scroll_offset / meta.max_scroll) or 0
+        local thumb_y = track_y + travel * ratio
+        local rr = math.max(1, meta.scrollbar_width/2)
+        out[#out+1]=draw_path(round_rect(track_x,track_y,meta.scrollbar_width,track_h,rr),o.scrollbar_track,o.scrollbar_track_alpha,0,0,o.scrollbar_track)
+        out[#out+1]=draw_path(round_rect(track_x,thumb_y,meta.scrollbar_width,thumb_h,rr),o.scrollbar_thumb,o.scrollbar_thumb_alpha,0,0,o.scrollbar_thumb)
     end
     return table.concat(out,'\n'),w,h
 end
@@ -537,7 +678,111 @@ local function clear()
     overlay:update()
 end
 
-local function render()
+local render
+
+local function prepare_playlist_scroll_for_open(level, item)
+    -- Calculate the playlist scroll offset BEFORE the submenu is rendered.
+    -- This is deliberately synchronous: the first frame of the opened submenu
+    -- is already positioned at the current item, with no visible jump.
+    if not item or type(item._playlist_current_menu_index) ~= 'number' then
+        return false
+    end
+    if level <= 1 or type(item.submenu) ~= 'table' then
+        return false
+    end
+
+    local ow, oh = get_osd()
+    if not ow or not oh or ow <= 0 or oh <= 0 then
+        return false
+    end
+
+    local _, _, layout, _, meta = measure(item.submenu, ow, oh, level)
+    if not meta or not meta.scrollable then
+        scroll_offsets[level] = 0
+        return false
+    end
+
+    local target
+    for _, g in ipairs(layout or {}) do
+        if g.index == item._playlist_current_menu_index then
+            target = g
+            break
+        end
+    end
+    if not target then
+        return false
+    end
+
+    -- target.y already includes top padding and the playlist header. Align the
+    -- current item to the top edge of the scroll viewport, immediately below
+    -- the header when one exists. Clamp at max_scroll so the last items cannot
+    -- be pushed beyond the panel's bottom edge.
+    local top = meta.top_pad + (meta.header_h or 0)
+    local desired = target.y - top
+    local offset = clamp(desired, 0, meta.max_scroll or 0)
+    scroll_offsets[level] = offset
+    return true
+end
+
+local function prepare_initial_playlist_scrolls(list, ow, oh, level)
+    -- Pre-position long playlist panels BEFORE the submenu is opened.
+    -- Do not rely on open_path here: at menu invocation time the playlist
+    -- submenu has not been opened yet, so get_playlist_header() cannot resolve
+    -- its parent through open_path. Metadata is available directly on `it`.
+    level = level or 1
+    if type(list) ~= 'table' then return end
+
+    for _, it in ipairs(list) do
+        if type(it) == 'table' and not is_hidden(it) and it.type == 'submenu' then
+            local child = it.submenu or {}
+            local child_level = level + 1
+
+            if type(it._playlist_current_index) == 'number'
+                and type(it._playlist_current_menu_index) == 'number'
+                and type(it._playlist_total) == 'number'
+                and it._playlist_total > 1 then
+
+                local _, _, layout, scale = measure(child, ow, oh, child_level)
+                local row_h = o.row_height * scale
+                local sep_h = o.separator_height * scale
+                local pad_y = o.padding_y * scale
+                local header_h = (type(it._playlist_header) == 'string' and it._playlist_header ~= '') and row_h or 0
+
+                -- Rebuild the content height including the playlist header, since
+                -- measure() cannot resolve the parent while open_path is empty.
+                local desired_h = pad_y + header_h + pad_y
+                for _, g in ipairs(layout or {}) do
+                    desired_h = desired_h + g.h
+                end
+                local max_h = panel_max_height(oh, scale)
+                local panel_h = math.min(desired_h, max_h)
+                local max_scroll = math.max(0, desired_h - panel_h)
+
+                if max_scroll > 0 then
+                    local target = it._playlist_current_menu_index
+                    local target_g
+                    for _, g in ipairs(layout or {}) do
+                        if g.index == target then target_g = g; break end
+                    end
+
+                    if target_g then
+                        -- Put the current item at the top of the visible list,
+                        -- directly below the 4/50 header when one exists.
+                        local target_top = pad_y + header_h
+                        local offset = target_g.y - target_top
+                        scroll_offsets[child_level] = clamp(offset, 0, max_scroll)
+                    end
+                else
+                    scroll_offsets[child_level] = 0
+                end
+            end
+
+            prepare_initial_playlist_scrolls(child, ow, oh, child_level)
+        end
+    end
+end
+
+render = function()
     if not visible then clear(); return end
     local ow,oh=get_osd()
     if not ow or not oh or ow <= 0 or oh <= 0 then return end
@@ -581,7 +826,7 @@ local function render()
             if cx+cw>ow-o.screen_margin*cscale then cx=parent.x-cw-gap end
             local pg=nil
             for _,g in ipairs(parent.layout or {}) do if g.index==pidx then pg=g;break end end
-            local cy=pg and (parent.y+pg.y) or parent.y+o.padding_y*cscale
+            local cy=pg and (parent.y+pg.y-(parent.scroll_offset or 0)) or parent.y+o.padding_y*cscale
             cy=clamp(cy,o.screen_margin*cscale,oh-ch-o.screen_margin*cscale)
             ass[#ass+1]=select(1,draw_menu(child,cx,cy,level,ow,oh))
         end
@@ -598,17 +843,23 @@ local function remove_bindings()
     key_bindings={}
 end
 
+local function cancel_hover_timer()
+    -- 子菜单采用同步展开，不再使用 hover 定时器。
+end
+
 local function hide()
     if show_timer then show_timer:kill(); show_timer=nil end
     if geometry_timer then geometry_timer:kill(); geometry_timer=nil end
+    cancel_hover_timer()
     if not visible then clear(); return end
     visible=false
     open_path={}
+    scroll_offsets={}
     rects={}
     anchor_x,anchor_y=nil,nil
     hover_level,hover_index=nil,nil
     selected_level,selected_index=1,nil
-    hover_deadline=nil
+    last_osd_w,last_osd_h=0,0
     remove_bindings()
     clear()
 end
@@ -626,7 +877,11 @@ local function activate_selected()
         open_path[selected_level]=selected_index
         selected_level=selected_level+1
         selected_index=first_selectable(it.submenu)
-        render(); return
+        if it._playlist_current_menu_index then
+            prepare_playlist_scroll_for_open(selected_level, it)
+        end
+        render()
+        return
     end
     local cmd=actual_cmd(it.cmd)
     hide()
@@ -649,9 +904,13 @@ local function setup_bindings()
     bind('UP','menu-up',function()
         selected_index=next_selectable(menu_at(selected_level),selected_index,-1)
         render()
+        ensure_visible(selected_level, selected_index)
+        render()
     end,{repeatable=true})
     bind('DOWN','menu-down',function()
         selected_index=next_selectable(menu_at(selected_level),selected_index,1)
+        render()
+        ensure_visible(selected_level, selected_index)
         render()
     end,{repeatable=true})
     bind('RIGHT','menu-right',function()
@@ -660,6 +919,9 @@ local function setup_bindings()
             open_path[selected_level]=selected_index
             selected_level=selected_level+1
             selected_index=first_selectable(it.submenu)
+            if it._playlist_current_menu_index then
+                prepare_playlist_scroll_for_open(selected_level, it)
+            end
             render()
         end
     end)
@@ -707,10 +969,28 @@ local function setup_bindings()
     end)
     bind('MBTN_RIGHT_DBL','menu-right-dbl-block',hide)
     bind('WHEEL_UP','menu-wheel-up',function()
-        selected_index=next_selectable(menu_at(selected_level),selected_index,-1); render()
+        local mx,my=get_mouse()
+        local l,r=panel_level_at(mx,my)
+        if l and r and r.scrollable then
+            if scroll_panel(l,-1) then render() end
+            return
+        end
+        selected_index=next_selectable(menu_at(selected_level),selected_index,-1)
+        render()
+        ensure_visible(selected_level, selected_index)
+        render()
     end)
     bind('WHEEL_DOWN','menu-wheel-down',function()
-        selected_index=next_selectable(menu_at(selected_level),selected_index,1); render()
+        local mx,my=get_mouse()
+        local l,r=panel_level_at(mx,my)
+        if l and r and r.scrollable then
+            if scroll_panel(l,1) then render() end
+            return
+        end
+        selected_index=next_selectable(menu_at(selected_level),selected_index,1)
+        render()
+        ensure_visible(selected_level, selected_index)
+        render()
     end)
 end
 
@@ -748,21 +1028,34 @@ local function on_mouse_move()
 
     if it.type=='submenu' and not state_has(it,'disabled') then
         open_path[l]=i
-        hover_deadline=mp.get_time()+o.hover_open_delay
+        if changed then
+            schedule_hover_open(l,i)
+        end
     else
         clear_deeper_path(l-1)
         open_path[l]=nil
-        hover_deadline=nil
+        cancel_hover_timer()
     end
 
     if changed then render() end
 end
 
-local function open_hover()
-    if not visible or not hover_deadline or mp.get_time()<hover_deadline then return end
-    hover_deadline=nil
-    local l,i=hover_level,hover_index
-    if not l or not i then return end
+local function refresh_menu_snapshot()
+    -- Dynamic menus are updated synchronously by dyn_menu.lua.  Reading the
+    -- property immediately after the script-message gives us the same menu
+    -- snapshot that will be rendered on this frame, without a second visual pass.
+    pcall(mp.commandv, 'script-message', 'menu-refresh-dynamic')
+    local ok, data = pcall(mp.get_property_native, menu_prop)
+    if ok and type(data) == 'table' then
+        items = data
+        normalize_menu(items)
+        return true
+    end
+    return false
+end
+
+local function open_hover_now(l, i)
+    if not visible or not l or not i then return end
     local list=menu_at(l)
     local it=list and list[i]
     if not it or it.type~='submenu' or state_has(it,'disabled') then
@@ -773,42 +1066,84 @@ local function open_hover()
     end
     if o.click_to_show_submenus then return end
 
+    -- Playlist data can change between right-click and hover. Refresh it before
+    -- opening the submenu so the current item and its scroll target are known
+    -- before the first frame is rendered.
+    if it._playlist_total or it._playlist_current_menu_index then
+        refresh_menu_snapshot()
+        list=menu_at(l)
+        it=list and list[i]
+        if not it or it.type~='submenu' then return end
+    end
+
     open_path[l]=i
     for k=#open_path,l+1,-1 do open_path[k]=nil end
     selected_level=l+1
     selected_index=first_selectable(it.submenu)
+
+    if it._playlist_current_menu_index then
+        -- Synchronous pre-layout: compute the scroll offset before render().
+        -- No post-render corrective pass, so the submenu never visibly jumps.
+        prepare_playlist_scroll_for_open(selected_level, it)
+    end
     render()
 end
 
-local function show()
-    local ok,data=pcall(mp.get_property_native,menu_prop)
-    items=ok and data or {}
-    if type(items)=='table' then normalize_menu(items) end
-    if type(items)~='table' or #items==0 or first_selectable(items) == nil then
-        if not show_timer then
-            show_timer=mp.add_timeout(0.06,function()
-                show_timer=nil
-                show()
-            end)
+schedule_hover_open = function(l, i)
+    if o.click_to_show_submenus or not l or not i then return end
+    local list=menu_at(l)
+    local it=list and list[i]
+    if not it or it.type~='submenu' or state_has(it,'disabled') then return end
+
+    -- 子菜单立即打开，不使用 hover timer / add_timeout。
+    -- 播放列表在 open_hover_now() 中同步预布局，首帧即定位。
+    open_hover_now(l, i)
+end
+
+local function show(attempt)
+    attempt = attempt or 1
+    -- Rebuild dynamic menus first, then wait one event-loop tick before taking the
+    -- snapshot. Dynamic playlist data can be committed by dyn_menu.lua on the next
+    -- idle cycle; calculating scroll against the pre-commit table is too early.
+    pcall(mp.commandv,'script-message','menu-refresh-dynamic')
+
+    if show_timer then show_timer:kill(); show_timer=nil end
+    local delay = (attempt == 1) and 0.03 or 0.05
+    show_timer = mp.add_timeout(delay, function()
+        show_timer = nil
+        refresh_menu_snapshot()
+
+        local ready = type(items)=='table' and #items>0 and first_selectable(items) ~= nil
+        if not ready then
+            if attempt < 6 then
+                show(attempt + 1)
+            else
+                msg.warn('menu data is empty')
+            end
+            return
         end
-        msg.warn('menu data is empty')
-        return
-    end
-    local mx,my=get_mouse()
-    anchor_x,anchor_y=(mx or 0)+2,(my or 0)+2
-    visible=true
-    open_path={}
-    rects={}
-    hover_level,hover_index=nil,nil
-    selected_level=1
-    selected_index=first_selectable(items)
-    setup_bindings()
-    render()
-    if geometry_timer then geometry_timer:kill() end
-    geometry_timer=mp.add_periodic_timer(0.10,function()
-        if not visible then return end
+
+        local mx,my=get_mouse()
+        anchor_x,anchor_y=(mx or 0)+2,(my or 0)+2
+        visible=true
+        open_path={}
+        scroll_offsets={}
+        rects={}
+        hover_level,hover_index=nil,nil
+        selected_level=1
+        selected_index=first_selectable(items)
+        local sow, soh = get_osd()
+        if sow and soh then
+            last_osd_w,last_osd_h=sow,soh
+            prepare_initial_playlist_scrolls(items, sow, soh, 1)
+        end
+        setup_bindings()
         render()
-        open_hover()
+        if geometry_timer then geometry_timer:kill() end
+        -- No periodic hover polling: mouse-pos and the scheduled hover timer
+        -- drive submenu opening directly. This avoids the old 100 ms polling
+        -- latency and eliminates the visible delayed playlist jump.
+        geometry_timer=nil
     end)
 end
 
@@ -832,7 +1167,55 @@ mp.observe_property(menu_prop,'native',function(_,v)
     if visible then render() end
 end)
 mp.observe_property('mouse-pos','native',function() on_mouse_move() end)
-mp.observe_property('osd-dimensions','native',function() if visible then render() end end)
+local function recompute_open_playlist_scrolls(ow, oh)
+    if not ow or not oh then return end
+    for level=2,#open_path+1 do
+        local parent_list=menu_at(level-1)
+        local idx=open_path[level-1]
+        local parent=parent_list and parent_list[idx]
+        if parent and parent.type=='submenu' and (parent._playlist_total or parent._playlist_current_menu_index) then
+            prepare_playlist_scroll_for_open(level,parent)
+        end
+    end
+end
+
+mp.observe_property('osd-dimensions','native',function()
+    if not visible then return end
+    local ow,oh=get_osd()
+    if not ow or not oh then return end
+    local changed=(ow~=last_osd_w or oh~=last_osd_h)
+    last_osd_w,last_osd_h=ow,oh
+    if changed then
+        -- Recompute the 80% viewport and the current playlist target against the
+        -- new OSD size BEFORE the next render. This keeps resize/fullscreen changes
+        -- from producing an old-position frame followed by a correcting frame.
+        recompute_open_playlist_scrolls(ow,oh)
+        if #open_path > 0 then
+            for level=2,#open_path+1 do
+                if not scroll_offsets[level] then
+                    local parent_list=menu_at(level-1)
+                    local idx=open_path[level-1]
+                    local parent=parent_list and parent_list[idx]
+                    if parent and parent.submenu then
+                        local _,_,_,_,meta=measure(parent.submenu,ow,oh,level)
+                        if meta and not meta.scrollable then scroll_offsets[level]=0 end
+                    end
+                end
+            end
+        end
+    end
+    render()
+end)
+mp.observe_property('playlist-playing-pos','number',function()
+    if not visible then return end
+    local ow,oh=get_osd()
+    if not ow or not oh then return end
+    -- Refresh the dynamic playlist snapshot and recompute before rendering so a
+    -- newly selected playlist item never appears at an old scroll position.
+    refresh_menu_snapshot()
+    recompute_open_playlist_scrolls(ow,oh)
+    render()
+end)
 
 -- Cross-platform dialog/clipboard backend.
 -- Windows-only APIs are isolated to the Windows branch and are executed in a
@@ -1296,14 +1679,189 @@ local function command_exists(name)
     return r and r.status==0
 end
 
+-- Windows clipboard deliberately uses utils.subprocess(), matching the known-good
+-- open-file-dialog.lua approach. This avoids the -2 process-launch failures that
+-- can occur with command_native_async() while mpv is still idle.
+local function windows_clipboard_get(src)
+    local was_ontop = mp.get_property_native('ontop')
+    if was_ontop then mp.set_property_native('ontop', false) end
+
+    local ps = windows_ps_executable()
+    if not ps then
+        if was_ontop then mp.set_property_native('ontop', true) end
+        mp.osd_message('找不到 PowerShell，无法读取剪贴板',3)
+        return
+    end
+
+    -- Use an STA PowerShell process and the WinForms clipboard API first,
+    -- with a WPF fallback. No stdin is involved, so idle mpv is supported.
+    local script = [[Add-Type -AssemblyName System.Windows.Forms
+$u8 = [System.Text.Encoding]::UTF8
+$out = [Console]::OpenStandardOutput()
+try {
+    $text = [System.Windows.Forms.Clipboard]::GetText()
+    if ($null -eq $text) { $text = '' }
+    $bytes = $u8.GetBytes([string]$text)
+    $out.Write($bytes, 0, $bytes.Length)
+    exit 0
+} catch {
+    try {
+        Add-Type -AssemblyName PresentationCore
+        $text = [System.Windows.Clipboard]::GetText()
+        if ($null -eq $text) { $text = '' }
+        $bytes = $u8.GetBytes([string]$text)
+        $out.Write($bytes, 0, $bytes.Length)
+        exit 0
+    } catch {
+        [Console]::Error.WriteLine($_.Exception.Message)
+        exit 1
+    }
+}]]
+
+    local ok,res = pcall(utils.subprocess,{
+        args={ps,'-NoLogo','-NoProfile','-STA','-ExecutionPolicy','Bypass','-Command',script},
+        cancellable=false, capture_stdout=true, capture_stderr=true,
+    })
+
+    if was_ontop then mp.set_property_native('ontop', true) end
+    if not ok or not res or res.status ~= 0 then
+        local err=(res and res.stderr) or 'subprocess failed'
+        mp.osd_message('读取剪贴板失败: '..tostring(err),3)
+        return
+    end
+
+    mp.commandv('script-message-to',src,'clipboard-get-reply',res.stdout or '')
+end
+
+local function windows_clipboard_set(text)
+    local was_ontop = mp.get_property_native('ontop')
+    if was_ontop then mp.set_property_native('ontop', false) end
+
+    local ps = windows_ps_executable()
+    if not ps then
+        if was_ontop then mp.set_property_native('ontop', true) end
+        mp.osd_message('找不到 PowerShell，无法设置剪贴板',3)
+        return
+    end
+
+    local nonce=string.format('%d-%06d',os.time(),math.random(0,999999))
+    local base=mp.command_native({'expand-path','~~/menu-clipboard-'..nonce})
+    local input_path=base..'.txt'
+    local ok_write,err=write_utf8_file(input_path,tostring(text or ''))
+    if not ok_write then
+        if was_ontop then mp.set_property_native('ontop', true) end
+        mp.osd_message('设置剪贴板失败: '..tostring(err),3)
+        return
+    end
+
+    -- Windows clipboard APIs require an STA thread. Use WinForms Clipboard
+    -- with a file-backed payload, which avoids the null-value failure from
+    -- Set-Clipboard when stdin is unavailable. Retry with WPF if necessary.
+    local path_literal=ps_single_quote(input_path)
+    local script = [[Add-Type -AssemblyName System.Windows.Forms
+$path = ]]..path_literal..[[
+try {
+    $text = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
+    if ($null -eq $text) { $text = '' }
+    [System.Windows.Forms.Clipboard]::SetText([string]$text, [System.Windows.Forms.TextDataFormat]::UnicodeText)
+    exit 0
+} catch {
+    try {
+        Add-Type -AssemblyName PresentationCore
+        [System.Windows.Clipboard]::SetText([string]$text)
+        exit 0
+    } catch {
+        [Console]::Error.WriteLine($_.Exception.Message)
+        exit 1
+    }
+}]]
+
+    local ok,res = pcall(utils.subprocess,{
+        args={ps,'-NoLogo','-NoProfile','-STA','-ExecutionPolicy','Bypass','-Command',script},
+        cancellable=false, capture_stdout=true, capture_stderr=true,
+    })
+    os.remove(input_path)
+    if was_ontop then mp.set_property_native('ontop', true) end
+
+    if not ok or not res or res.status ~= 0 then
+        local err=(res and res.stderr) or 'subprocess failed'
+        mp.osd_message('设置剪贴板失败: '..tostring(err),3)
+        return
+    end
+end
+
+-- Clipboard backend for menu commands such as:
+--   script-message-to dialog set-clipboard ${path}
+-- This follows the user's known-good copy-path.lua implementation: Windows
+-- passes text as a PowerShell Set-Clipboard argument, while macOS/Linux use
+-- stdin_data with their native clipboard utility. playback_only=false makes
+-- the operation available even when mpv is still idle.
+local function copy_path_platform()
+    if package.config:sub(1, 1) == '\\' then
+        return 'windows'
+    end
+    local p = mp.get_property('platform', 'unknown')
+    if p == 'darwin' then return 'macos' end
+    return 'linux'
+end
+
+local function copy_text_to_clipboard(text)
+    if not text or text == '' then
+        return false, 'No text to copy'
+    end
+
+    local p = copy_path_platform()
+    local args
+    local stdin = nil
+
+    if p == 'windows' then
+        -- Deliberately match the known-good copy-path.lua behavior.
+        local escaped = tostring(text):gsub('"', '""')
+        local cmd = 'Set-Clipboard -Value "' .. escaped .. '"'
+        args = { 'powershell', '-Command', cmd }
+    elseif p == 'macos' then
+        args = { 'pbcopy' }
+        stdin = text
+    else
+        local x = utils.subprocess({ args = { 'which', 'xclip' }, playback_only = false })
+        if x and x.status == 0 then
+            args = { 'xclip', '-selection', 'clipboard' }
+        else
+            local wl = utils.subprocess({ args = { 'which', 'wl-copy' }, playback_only = false })
+            if wl and wl.status == 0 then
+                args = { 'wl-copy' }
+            else
+                return false, 'No clipboard tool found (install xclip or wl-copy)'
+            end
+        end
+        stdin = text
+    end
+
+    local result = utils.subprocess({
+        args = args,
+        stdin_data = stdin,
+        playback_only = false,
+        capture_stdout = true,
+        capture_stderr = true,
+    })
+
+    if result and result.status == 0 then
+        return true, nil
+    end
+
+    local err = result and (result.error or result.stderr) or 'Unknown error'
+    return false, err
+end
+
 mp.register_script_message('clipboard/get',function(src)
     local p=platform_name()
-    local args
     if p=='windows' then
-        local ps=windows_ps_executable()
-        if not ps then mp.osd_message('找不到 PowerShell，无法读取剪贴板',3); return end
-        args={ps,'-NoProfile','-STA','-Command','$utf8=New-Object System.Text.UTF8Encoding($false);[Console]::OutputEncoding=$utf8;Get-Clipboard -Raw'}
-    elseif p=='darwin' then
+        windows_clipboard_get(src)
+        return
+    end
+
+    local args
+    if p=='darwin' then
         args={'pbpaste'}
     elseif command_exists('wl-paste') then
         args={'wl-paste','--no-newline'}
@@ -1324,26 +1882,18 @@ end)
 mp.register_script_message('clipboard/set',function(text)
     if text==nil then return end
     local value=tostring(text):gsub('\xFD.-\xFE','')
-    local p=platform_name()
-    if p=='windows' then
-        local ps=windows_ps_executable()
-        if not ps then mp.osd_message('找不到 PowerShell，无法设置剪贴板',3); return end
-        submit_async({ps,'-NoProfile','-STA','-Command','$t=[Console]::In.ReadToEnd();Set-Clipboard -Value $t'},function(_,err) if err then mp.osd_message('设置剪贴板失败: '..tostring(err),3) end end,value)
-    elseif p=='darwin' then
-        submit_async({'pbcopy'},function(_,err) if err then mp.osd_message('设置剪贴板失败: '..tostring(err),3) end end,value)
-    elseif command_exists('wl-copy') then
-        submit_async({'wl-copy'},function(_,err) if err then mp.osd_message('设置剪贴板失败: '..tostring(err),3) end end,value)
-    elseif command_exists('xclip') then
-        submit_async({'xclip','-selection','clipboard'},function(_,err) if err then mp.osd_message('设置剪贴板失败: '..tostring(err),3) end end,value)
-    elseif command_exists('xsel') then
-        submit_async({'xsel','--clipboard','--input'},function(_,err) if err then mp.osd_message('设置剪贴板失败: '..tostring(err),3) end end,value)
-    else
-        mp.osd_message('找不到剪贴板工具（wl-copy/xclip/xsel）',3)
+    local ok,err=copy_text_to_clipboard(value)
+    if not ok then
+        mp.osd_message('设置剪贴板失败: '..tostring(err),3)
+        msg.error('clipboard/set failed: '..tostring(err))
     end
 end)
 
 mp.register_event('end-file',hide)
 mp.register_event('shutdown',hide)
-mp.add_periodic_timer(0.04,function() if visible then on_mouse_move();open_hover() end end)
+-- mouse-pos is observed directly. Keep a lightweight fallback sampler for mpv builds
+-- that coalesce mouse-pos notifications during OSD interaction; it never performs
+-- submenu polling/scroll correction itself.
+mp.add_periodic_timer(0.08,function() if visible then on_mouse_move() end end)
 
-msg.info('cross-platform menu backend v21 loaded as '..BACKEND_NAME)
+msg.info('cross-platform menu backend v43 loaded as '..BACKEND_NAME)
