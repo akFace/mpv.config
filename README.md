@@ -76,9 +76,9 @@
 default：
 ![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-08-15_00-09-37.jpg)
 macos-white：
-![image](https://github.com/akFace/mpv.config/raw/master/doc/preview/Snipaste_2026-08-16_01-04-38.jpg)
+![image](https://github.com/akFace/mpv.config/raw/master/preview/Snipaste_2026-08-16_01-04-38.jpg)
 macos-dark：
-![image](https://github.com/akFace/mpv.config/raw/master/doc/preview/Snipaste_2026-08-16_01-10-14.jpg)
+![image](https://github.com/akFace/mpv.config/raw/master/preview/Snipaste_2026-08-16_01-10-14.jpg)
 
 ### 可视化均衡器 eq
 
