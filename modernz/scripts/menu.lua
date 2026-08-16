@@ -1,4 +1,4 @@
--- mpv-menu-plugin: cross-platform mpv.net-inspired menu backend (v43)
+-- mpv-menu-plugin: cross-platform mpv.net-inspired menu backend (v48)
 -- Rendering model:
 --   * bind the ASS overlay canvas to the CURRENT valid OSD dimensions
 --   * never render while the OSD size is 0x0
@@ -49,6 +49,8 @@ local o = {
     padding_x = 14,
     padding_y = 4,
     shortcut_gap = 8,
+    shortcut_right_gap = 0,
+    playlist_shortcut_right_gap = 6,
     arrow_width = 18,
     arrow_font_size = 34,
     submenu_gap = 4,
@@ -636,27 +638,53 @@ local function draw_menu(list,x,y,level,ow,oh)
                     right_edge = right_edge - meta.scrollbar_width - meta.scrollbar_gap
                 end
                 local arrow_center = nil
-                local shortcut_x = nil
-                local shortcut_w = shortcut ~= '' and text_width(shortcut, scale) or 0
+                local shortcut_right_x = nil
+                -- CSS-like right alignment: the shortcut text is positioned by
+                -- its right edge, then rendered with ASS middle-right alignment
+                -- (\an6). This keeps short/long shortcut labels on one vertical
+                -- column instead of guessing the left coordinate from text width.
+                local shortcut_right_gap = math.max(0, tonumber(o.shortcut_right_gap or 0)) * scale
+                -- Playlist entries use the right-side metadata (e.g. MKV/MP4).
+                -- Give that suffix a little extra breathing room from the right edge.
+                if playlist_header and shortcut ~= '' then
+                    shortcut_right_gap = shortcut_right_gap + math.max(0, tonumber(o.playlist_shortcut_right_gap or 0)) * scale
+                end
                 if it.type == 'submenu' then
                     arrow_center = right_edge - (o.arrow_width * scale) / 2
                     local arrow_left = right_edge - o.arrow_width * scale
                     if shortcut ~= '' then
-                        shortcut_x = arrow_left - o.shortcut_gap * scale - shortcut_w
-                        right_edge = shortcut_x - o.shortcut_gap * scale
-                    else
-                        right_edge = arrow_left - o.shortcut_gap * scale
+                        shortcut_right_x = arrow_left - shortcut_right_gap
                     end
+                    right_edge = arrow_left - o.shortcut_gap * scale
                 else
                     if shortcut ~= '' then
-                        shortcut_x = right_edge - shortcut_w
-                        right_edge = shortcut_x - o.shortcut_gap * scale
+                        shortcut_right_x = right_edge - shortcut_right_gap
                     end
                 end
+
+                -- Reserve a real, measurable shortcut column before truncating the
+                -- title.  The previous v47 right-alignment change positioned the
+                -- shortcut correctly, but relied on the text-width approximation
+                -- when deciding how much room the title could use.  With long
+                -- metadata (for example "MKV | 08/16 14:58") that could let the
+                -- rendered shortcut extend farther left than the reserved title
+                -- area.  We now truncate the shortcut itself to the available
+                -- column first, then calculate the title area from the truncated
+                -- shortcut width.  This preserves right alignment and prevents
+                -- title/shortcut overlap.
+                local display_shortcut = shortcut
+                local shortcut_display_w = 0
+                if shortcut ~= '' and shortcut_right_x then
+                    local shortcut_maxw = math.max(1, shortcut_right_x - left_x - o.shortcut_gap * scale)
+                    display_shortcut = truncate_text(shortcut, shortcut_maxw, scale)
+                    shortcut_display_w = text_width(display_shortcut, scale)
+                    right_edge = shortcut_right_x - shortcut_display_w - o.shortcut_gap * scale
+                end
+
                 local display_title=truncate_text(title,math.max(1,right_edge-left_x),scale)
                 row_out[#row_out+1]=text_tag(left_x,text_y,display_title,c,fs,'4')
-                if shortcut ~= '' then
-                    row_out[#row_out+1]=text_tag(shortcut_x,text_y,shortcut,disabled and o.disabled_text or (ih and o.hover_shortcut or o.shortcut),fs,'4')
+                if display_shortcut ~= '' then
+                    row_out[#row_out+1]=text_tag(shortcut_right_x,text_y,display_shortcut,disabled and o.disabled_text or (ih and o.hover_shortcut or o.shortcut),fs,'6')
                 end
                 if it.type == 'submenu' then
                     local arrow_fs=o.arrow_font_size*scale
