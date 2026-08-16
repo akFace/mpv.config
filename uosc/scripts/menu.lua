@@ -24,6 +24,8 @@ local o = {
     hover_bg = '',
     hover_text = '',
     hover_corner_radius = 7,
+    hover_margin_x = 1,
+    hover_margin_y = 0,
     shortcut = '#D0D0D0',
     hover_shortcut = '',
     separator = '#BEBEBE',
@@ -605,10 +607,12 @@ local function draw_menu(list,x,y,level,ow,oh)
                 local path_hovered = (hover_level == level and hover_index == idx)
                 local ih = path_selected or path_hovered
                 if ih then
-                    local sel_x = x + 1*scale
-                    local sel_y = ry
-                    local sel_w = w - 2*scale
-                    local sel_h = g.h
+                    local hm_x = math.max(0, tonumber(o.hover_margin_x or 1) * scale)
+                    local hm_y = math.max(0, tonumber(o.hover_margin_y or 0) * scale)
+                    local sel_x = x + hm_x
+                    local sel_y = ry + hm_y
+                    local sel_w = math.max(0, w - 2 * hm_x)
+                    local sel_h = math.max(0, g.h - 2 * hm_y)
                     local hr = tonumber(o.hover_corner_radius or o.radius or 0) * scale
                     row_out[#row_out+1]=draw_path(round_rect(sel_x,sel_y,sel_w,sel_h,hr),o.hover,0,
                         (tonumber(o.hover_border_width) or 0)*scale,0,o.hover_border)
