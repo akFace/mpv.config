@@ -1,5 +1,8 @@
 # mpv 和 mpv.net 开箱即用配置文件&精美 UI 主题皮肤&常用插件（Windows、macOS、Linux）
 
+> - mpv 配置文件支持 Windows、macOS、Linux，全平台带有一致的右键菜单功能
+> - The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms.
+
 ## 简要说明
 
 - 支持 Windows、macOS、Linux
