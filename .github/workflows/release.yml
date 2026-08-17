@@ -66,7 +66,7 @@ jobs:
 
           - 请选择喜欢的某一套下载即可
           - 已包含所有配置文件，解压放到配置文件夹下即可
-          - modernz_xxx.zip和uosc_xxx.zip 后缀为不同风格的右键菜单，功能一样。 👉 [右键菜单预览](https://github.com/akFace/mpv.config#%E5%8A%9F%E8%83%BD%E5%BC%BA%E5%A4%A7%E7%9A%84%E5%8F%B3%E9%94%AE%E8%8F%9C%E5%8D%95)
+          - \`modernz_xxx.zip\`和\`uosc_xxx.zip\` 后缀为不同风格的右键菜单，功能一样。 👉 [右键菜单预览](https://github.com/akFace/mpv.config#%E5%8A%9F%E8%83%BD%E5%BC%BA%E5%A4%A7%E7%9A%84%E5%8F%B3%E9%94%AE%E8%8F%9C%E5%8D%95)
           - 👉 [使用教程](https://github.com/akFace/mpv.config#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95)
           - 关于弹幕流畅度问题，目前本人的设备屏幕是 4k60hz，要打开video-sync=display-resample才流畅，但有些用户的设备打开此设置开倍速播放会导致声音卡问题，因此现在默认关闭，需要设置的请打开 mpv.conf 文件编辑，删除此行代码最前面的 # 号
 
