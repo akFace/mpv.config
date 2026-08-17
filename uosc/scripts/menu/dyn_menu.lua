@@ -1,18 +1,20 @@
 -- Copyright (c) 2023-2024 tsl0922. All rights reserved.
 -- SPDX-License-Identifier: GPL-2.0-only
 
+-- scripts/menu/dyn_menu.lua
 local opts = require('mp.options')
 local utils = require('mp.utils')
 local msg = require('mp.msg')
 
 -- user options
 local o = {
-    uosc_syntax = false,     -- toggle uosc menu syntax support
-    escape_title = true,     -- escape & to && in menu title
-    max_title_length = 80,   -- limit the title length, set to 0 to disable.
-    max_playlist_items = 0, -- show the full playlist; the menu renderer handles scrolling when it is too tall. The playlist submenu also shows current/total at the top.
+    uosc_syntax = false,
+    escape_title = true,
+    max_title_length = 80,
+    max_playlist_items = 0,
 }
-opts.read_options(o)
+opts.read_options(o, nil, 'dyn_menu')   -- 读取 script-opts/dyn_menu.conf
+-- ... 其余代码原样不变
 
 local menu_native = 'menu'               -- dll client name
 local menu_prop = 'user-data/menu/items' -- menu data property

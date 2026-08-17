@@ -13,7 +13,7 @@ local o = {
     subtitle_exts = '*.srt;*.ass;*.idx;*.sub;*.sup;*.txt;*.ssa;*.smi;*.mks',
     playlist_exts = '*.m3u;*.m3u8;*.pls;*.cue',
 }
-opts.read_options(o)
+opts.read_options(o, nil, 'menu')   -- 修改这里，读取 menu.conf
 
 local menu_native = 'menu'
 local open_action = ''

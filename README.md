@@ -24,13 +24,15 @@
 ## 使用方法
 
 - 先安装 mpv 或者 mpv.net 播放器 **(Windows 推荐 mpv.net)**，下载地址：[mpvnet-player](https://github.com/mpvnet-player/mpv.net/releases)，建议下载`setup-x64.exe`安装程序版本。||=>其他用户下载：[mpv 原生播放器](https://mpv.io/)
-- [🎯 点击下载](https://github.com/akFace/mpv.config/releases) 你想要的主题皮肤（每个都已包含完整配置）`modernz`和`uosc`，并解压，**以下 ① 和 ② 根据自己选择的播放器按对应教程来即可**
+- [🎯 点击下载](https://github.com/akFace/mpv.config/releases) 你想要的主题皮肤（每个都已包含完整配置）`modernz`和`uosc`，并解压
+- **以下案例以 Windows 系统为例： ① 和 ② 根据自己选择的播放器按对应教程来即可**
 - **①. mpv.net 播放器**：如图所示，右键>配置>打开配置文件夹或者`Ctrl + f`快捷键打开`配置文件夹`
 
   ![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-03-16_20-34-06.jpg)
 
 - **②. mpv 原生播放器**：解压/安装播放器后，在播放器根目录下新建名为 `portable_config` 文件夹，作为`配置文件夹`
 - 将解压出的全部复制到`配置文件夹`(只能共存一个主题配置)，重启播放器即可
+
 - 注意目录结构
 
 ```
@@ -43,7 +45,17 @@
       └── input.conf
 ```
 
-> ⚠️ **提示**：若你使用的并非 mpv.net 播放器，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpvnet`改为`mpv_path=mpv`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
+- 一般 mpv 安装版（非 Portable 便携版）配置文件目录：
+
+```
+Linux:   ~/.config/mpv/
+Windows: C:/Users/%username%/AppData/Roaming/mpv/
+macOS:   ~/Library/Application Support/mpv/
+```
+
+> ⚠️ **提示**：若你使用的并非 mpv.net 播放器，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpvnet`改为`mpv_path=mpv`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv\mpv.exe`
+>
+> - 其他平台可能会因为 [uosc_danmaku](https://github.com/Tony15246/uosc_danmaku/issues/194) 插件导致无法打开， [右键菜单故障排查文档](https://github.com/akFace/mpv-menu-plugin-next/blob/main/doc/README.md#%E5%89%AA%E8%B4%B4%E6%9D%BF)，请自查解决方案。
 
 ### **[👉 常用快捷键](https://github.com/akFace/mpv.config/wiki/%E5%BF%AB%E6%8D%B7%E9%94%AE)**
 
@@ -54,9 +66,7 @@
 - **关于弹幕流畅度问题**，目前本人的设备屏幕是 4k60hz，要打开`video-sync=display-resample`才流畅，但有些用户的设备打开此设置开倍速播放会导致声音卡问题，因此现在默认关闭，需要设置的请打开 mpv.conf 文件编辑，删除此行代码最前面的 # 号
 - 跳过片头片尾：在配置文件夹中`mpv.conf`,打开编辑，可看到注释的跳过片头片尾，把注释的#号去掉，填写上自定义的片头片尾时间重启播放器即可
 - **推荐：** 油猴脚本 👉 [play-with-mpv 使用 mpv 播放网页中的视频](https://github.com/akFace/play-with-mpv)
-- [UOSC 主题](https://github.com/tomasklaen/uosc)
-- [ModernZ 主题](https://github.com/Samillion/ModernZ)
-- [Equalizer-GUI 均衡器](https://github.com/akFace/equalizer-gui)
+- [UOSC](https://github.com/tomasklaen/uosc)、[ModernZ](https://github.com/Samillion/ModernZ)、[Equalizer-GUI](https://github.com/akFace/equalizer-gui)
 - **语言/language:** The language setting for the modernz theme is in `script-opts/modernz.conf`, and the language setting for the uosc theme is in `script-opts/uosc.conf`. You can see it by searching for the keyword `language` in the file.，Download `input-en.conf` and rename it to `input.conf`, then replace the original file
 
 ## 如何更新到最新版

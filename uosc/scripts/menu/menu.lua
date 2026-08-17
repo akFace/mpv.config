@@ -13,7 +13,7 @@ local utils = require('mp.utils')
 local o = {
     font = '',
     font_name = '',
-    font_size = 22,
+    font_size = 18,
     bold = false,
     italic = false,
     background = '#303030',
@@ -43,8 +43,7 @@ local o = {
     hover_border_width = 0.5,
     hover_border = '#656565',
     shadow_blur = 6,
-    row_height = 42,
-    min_row_height = 32,
+    row_height = 26,
     separator_height = 8,
     padding_x = 14,
     padding_y = 4,
@@ -52,7 +51,8 @@ local o = {
     shortcut_right_gap = 0,
     playlist_shortcut_right_gap = 6,
     arrow_width = 18,
-    arrow_font_size = 34,
+    arrow_font_size = 24,
+    arrow_char = '›',
     submenu_gap = 4,
     screen_margin = 6,
     min_width = 360,
@@ -70,12 +70,18 @@ local o = {
     scroll_step = 1,
     click_to_show_submenus = false,
     hide_root_separators = true,
-    child_indent_chars = 2,
-    root_indent_chars = 1.5,
+    child_indent_chars = 1,
+    root_indent_chars = 1,
     playlist_header_indent_chars = 1,
     modal_mask = true,
     modal_mask_alpha = 255,
     modal_z = 1000000,
+    ui_scale = 'auto',
+    design_width = 1920,
+    design_height = 1080,
+    min_ui_scale = 0.8,
+    max_ui_scale = 2.5,
+    macos_font_scale = 1.0,
 }
 opts.read_options(o)
 -- Style aliases for macOS-like menu.conf files.
@@ -150,11 +156,104 @@ local function ass_text(s)
     return s
 end
 
+local screen_size_cache = nil
+
+local function parse_resolution(text)
+    if not text then return nil end
+    local w,h = text:match('(%d+)%s*[xX×]%s*(%d+)')
+    if w and h then
+        return tonumber(w), tonumber(h)
+    end
+    return nil
+end
+
+local function get_screen_size()
+    if screen_size_cache then
+        return screen_size_cache[1], screen_size_cache[2]
+    end
+
+    local w,h
+
+    -- mpv provides display dimensions from the active display.
+    -- This is preferred because it works with HiDPI/Retina better than
+    -- querying external tools and does not depend on window size.
+    local dw = mp.get_property_native('display-width')
+    local dh = mp.get_property_native('display-height')
+    if type(dw) == 'number' and type(dh) == 'number' and dw > 0 and dh > 0 then
+        w,h = dw,dh
+    end
+
+    -- Fallback for older mpv builds or platforms where display properties
+    -- are unavailable.
+    if not w or not h then
+        if platform == 'darwin' then
+            local r = utils.subprocess({
+                args = {'/usr/sbin/system_profiler', 'SPDisplaysDataType'},
+                cancellable = false,
+                capture_stdout = true,
+                capture_stderr = false,
+            })
+            if r and r.status == 0 then
+                w,h = parse_resolution(r.stdout)
+            end
+        elseif platform == 'linux' then
+            local r = utils.subprocess({
+                args = {'sh','-c','xrandr 2>/dev/null | grep -m1 -oE "[0-9]+x[0-9]+"'},
+                cancellable = false,
+                capture_stdout = true,
+                capture_stderr = false,
+            })
+            if r and r.status == 0 then
+                w,h = parse_resolution(r.stdout)
+            end
+        elseif platform == 'windows' then
+            local r = utils.subprocess({
+                args = {'powershell','-NoProfile','-Command',
+                    '[System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width.ToString()+"x"+[System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height.ToString()'},
+                cancellable = false,
+                capture_stdout = true,
+                capture_stderr = false,
+            })
+            if r and r.status == 0 then
+                w,h = parse_resolution(r.stdout)
+            end
+        end
+    end
+
+    if w and h and w > 0 and h > 0 then
+        screen_size_cache = {w,h}
+        return w,h
+    end
+
+    return nil,nil
+end
+
 local function ui_scale(ow, oh)
-    -- Menu geometry is deliberately fixed in current OSD pixels.
-    -- This keeps drawing and hit-testing exact instead of introducing
-    -- non-uniform scaling on portrait/small windows.
-    return 1
+    if o.ui_scale ~= 'auto' then
+        local n = tonumber(o.ui_scale)
+        if n and n > 0 then return n end
+        return 1
+    end
+
+    -- Prefer physical screen resolution. If unavailable, keep the old OSD-size method.
+    local sw,sh = get_screen_size()
+    if not sw or not sh then
+        sw,sh = ow,oh
+    end
+
+    if not sw or not sh or sw <= 0 or sh <= 0 then return 1 end
+
+    local dw = tonumber(o.design_width) or 1920
+    local dh = tonumber(o.design_height) or 1080
+    local sx = sw / dw
+    local sy = sh / dh
+    local s = math.min(sx, sy)
+    s = clamp(s, tonumber(o.min_ui_scale) or 0.8, tonumber(o.max_ui_scale) or 2.5)
+
+    if platform == 'darwin' then
+        s = s * (tonumber(o.macos_font_scale) or 1.0)
+    end
+    return s
 end
 
 
@@ -326,7 +425,22 @@ end
 
 local function actual_cmd(cmd)
     if type(cmd) ~= 'string' then return nil end
-    local s = cmd:gsub('%s+#menu:.*$', ''):gsub('%s+#@.*$', ''):gsub('%s+#!.*$', '')
+
+    local s = cmd
+        :gsub('%s+#menu:.*$', '')
+        :gsub('%s+#@.*$', '')
+        :gsub('%s+#!.*$', '')
+
+    -- Folder-based layout: dialog.lua is loaded by the same mpv script as
+    -- menu.lua, so there is no separately registered script named "dialog".
+    -- Older input.conf entries may still contain:
+    --     script-message-to dialog open
+    -- Redirect those commands to this script backend instead.
+    s = s:gsub(
+        'script%-message%-to%s+dialog(%s)',
+        'script-message-to ' .. BACKEND_NAME .. '%1'
+    )
+
     return s
 end
 
@@ -688,7 +802,7 @@ local function draw_menu(list,x,y,level,ow,oh)
                 end
                 if it.type == 'submenu' then
                     local arrow_fs=o.arrow_font_size*scale
-                    row_out[#row_out+1]=text_tag(arrow_center,text_y,'›',ih and o.hover_arrow or o.submenu_arrow,arrow_fs,'5',nil,nil,ih and o.hover_arrow_alpha or o.arrow_alpha)
+                    row_out[#row_out+1]=text_tag(arrow_center,text_y,o.arrow_char,ih and o.hover_arrow or o.submenu_arrow,arrow_fs,'5',nil,nil,ih and o.hover_arrow_alpha or o.arrow_alpha)
                 end
             end
             if #row_out > 0 then
@@ -1280,6 +1394,9 @@ local function submit_async(args, cb, stdin_data)
         capture_stdout=true,
         capture_stderr=true,
         stdin_data=stdin_data,
+        -- File dialogs are GUI processes. They must also work while mpv is idle
+        -- (no file loaded yet), so do not inherit playback-only restrictions.
+        playback_only=false,
     }, function(success,res,err)
         if not success or not res then
             cb(nil,err or 'subprocess failed')
@@ -1603,6 +1720,15 @@ local function as_escape(v)
 end
 
 local function open_macos(multi,folder,save,default_name,src)
+    -- macOS dialog compatibility:
+    -- Use the system osascript binary explicitly. This works on both Intel
+    -- macOS and Apple Silicon (M1/M2/M3/M4) because /usr/bin/osascript is a
+    -- universal system tool. Avoid relying on PATH inherited by mpv.
+    local osascript = '/usr/bin/osascript'
+    if not utils.file_info(osascript) then
+        osascript = 'osascript'
+    end
+
     local code
     if folder then
         code='set picked to choose folder with prompt "Select Folder"\nreturn POSIX path of picked'
@@ -1613,7 +1739,7 @@ local function open_macos(multi,folder,save,default_name,src)
     else
         code='set picked to choose file with prompt "Open"\nreturn POSIX path of picked'
     end
-    submit_async({'osascript','-e',code},function(out,err)
+    submit_async({osascript,'-e',code},function(out,err)
         if err then mp.osd_message('文件对话框: '..tostring(err),3);return end
         local paths=split_lines(out)
         if #paths==0 then return end
