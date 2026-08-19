@@ -99,6 +99,10 @@ macos-dark：
 
 鸣谢以下开源项目提供的便利：
 
+- [mpv](https://github.com/mpv-player/mpv)
+- [mpv-winbuild](https://github.com/zhongfly/mpv-winbuild)
+- [shinchiro](https://github.com/shinchiro/mpv-winbuild-cmake)
+- [mpv.net](https://github.com/mpvnet-player/mpv.net)
 - [Thumbfast](https://github.com/po5/thumbfast)
 - [UOSC](https://github.com/tomasklaen/uosc)
 - [ModernZ](https://github.com/Samillion/ModernZ)
@@ -109,4 +113,5 @@ macos-dark：
 - [Equalizer-GUI](https://github.com/akFace/equalizer-gui)
 - [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
 - [play-with-mpv](https://github.com/akFace/play-with-mpv)
+- [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu)
 - [mpv 中文配置手册](https://hooke007.github.io/official_man/index.html)
