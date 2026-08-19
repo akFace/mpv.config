@@ -276,6 +276,15 @@ function remove_item(index)
     write_json()
 end
 
+function clear_recent()
+    menu.items = {}
+    write_json(true)
+    local json = utils.format_json(menu)
+    mp.commandv("script-message-to", "uosc", "update-menu", json)
+
+    mp.osd_message("The recently has been cleared.", 2)
+end
+
 function open_menu_uosc()
     local json = utils.format_json(menu)
     mp.commandv("script-message-to", "uosc", "open-menu", json)
@@ -381,6 +390,7 @@ end
 
 mp.add_key_binding(nil, "open", open_menu)
 mp.add_key_binding(nil, "last", play_last)
+mp.add_key_binding(nil, "clear", clear_recent)
 mp.register_event("file-loaded", on_load)
 mp.register_event("end-file", on_end)
 

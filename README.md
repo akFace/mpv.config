@@ -21,7 +21,7 @@
 
 ## 使用方法
 
-- 先安装播放器：[mpv 官网](https://mpv.io)， **Windows：**[官方构建版本-推荐](https://github.com/mpv-player/mpv/releases)、[每日构建版本-推荐](https://github.com/zhongfly/mpv-winbuild/releases)、 [shinchiro 版本](https://github.com/shinchiro/mpv-winbuild-cmake/releases)、[mpv.net 版本](https://github.com/mpvnet-player/mpv.net/releases)。**MacOS、Linux ：**[mpv 官网下载](https://mpv.io/installation/)
+- 先安装播放器：**Windows：**[官方构建版本-推荐](https://github.com/mpv-player/mpv/releases)、[每日构建版本-推荐](https://github.com/zhongfly/mpv-winbuild/releases)、 [shinchiro 版本](https://github.com/shinchiro/mpv-winbuild-cmake/releases)、[mpv.net 版本](https://github.com/mpvnet-player/mpv.net/releases)。**MacOS、Linux ：**[mpv 官网下载](https://mpv.io/installation/)
 - [🎯 点击下载](https://github.com/akFace/mpv.config/releases) 你想要的主题皮肤（每个压缩包都已包含完整功能的配置）`modernz`和`uosc`，并解压
 - **以下案例以 Windows 系统为例： ① 和 ② 根据自己选择的播放器按对应教程来即可**
 - **①. mpv 原生播放器**：解压/安装播放器后，在播放器根目录(`mpv.exe` 同目录)下新建名为 `portable_config` 文件夹，作为`配置文件夹`
@@ -63,6 +63,7 @@ macOS:   ~/Library/Application Support/mpv/
 - 弹幕相关配置：[查看文档](https://github.com/Tony15246/uosc_danmaku#%E7%9B%AE%E5%BD%95)
 - **关于弹幕流畅度问题**，目前本人的设备屏幕是 4k60hz，要打开`video-sync=display-resample`才流畅，但有些用户的设备打开此设置开倍速播放会导致声音卡问题，因此现在默认关闭，需要设置的请打开 mpv.conf 文件编辑，删除此行代码最前面的 # 号
 - 跳过片头片尾：在配置文件夹中`mpv.conf`,打开编辑，可看到注释的跳过片头片尾，把注释的#号去掉，填写上自定义的片头片尾时间重启播放器即可
+- 直接播放 B 站、YouTube 视频或其他链接：安装 [yt-dlp](https://github.com/yt-dlp/yt-dlp/releases) ，进入下载 yt-dlp.exe，放到 `mpv.exe` 同目录下，即：播放器安装目录。重启即可直接粘贴视频页面链接，不过更推荐下边的浏览器插件
 - **推荐：** 油猴脚本 👉 [play-with-mpv 使用 mpv 播放网页中的视频](https://github.com/akFace/play-with-mpv)
 - **语言/language:** The language setting for the modernz theme is in `script-opts/modernz.conf`, and the language setting for the uosc theme is in `script-opts/uosc.conf`. You can see it by searching for the keyword `language` in the file.，Download `input-en.conf` and rename it to `input.conf`, then replace the original file
 
@@ -94,9 +95,9 @@ macos-dark：
 
 ![alt text](https://github.com/akFace/equalizer-gui/raw/main/images/Snipaste_2026-08-13_18-08-43.jpg)
 
-## 相关插件
+## 相关链接
 
-鸣谢以下插件提供的便利：
+鸣谢以下开源项目提供的便利：
 
 - [Thumbfast](https://github.com/po5/thumbfast)
 - [UOSC](https://github.com/tomasklaen/uosc)
@@ -107,3 +108,5 @@ macos-dark：
 - [mpv360](https://github.com/kasper93/mpv360)
 - [Equalizer-GUI](https://github.com/akFace/equalizer-gui)
 - [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
+- [play-with-mpv](https://github.com/akFace/play-with-mpv)
+- [mpv 中文配置手册](https://hooke007.github.io/official_man/index.html)
