@@ -114,4 +114,5 @@ macos-dark：
 - [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
 - [play-with-mpv](https://github.com/akFace/play-with-mpv)
 - [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu)
+- [awesome-mpv](https://github.com/stax76/awesome-mpv)
 - [mpv 中文配置手册](https://hooke007.github.io/official_man/index.html)

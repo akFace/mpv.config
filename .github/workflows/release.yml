@@ -108,6 +108,11 @@ jobs:
               cp -f "$conf_file" "$temp_dir/script-opts/menu.conf"
               # 复制全局配置并覆盖（-f 强制覆盖）
               cp -f mpv.conf input.conf "$temp_dir/"
+
+              # 写入当前打包版本号
+              # 版本号与本次 GitHub Release 的 Tag 保持一致，例如：v1.2.3
+              printf '%s\n' "${{ steps.release_info.outputs.NEW_TAG }}" > "$temp_dir/config-version"
+
               # 打包
               zip -r "${temp_dir}.zip" "$temp_dir"
               # 清理临时目录
