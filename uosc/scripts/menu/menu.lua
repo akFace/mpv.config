@@ -83,8 +83,9 @@ local o = {
     max_ui_scale = 2.5,
     macos_font_scale = 1.0,
 }
-opts.read_options(o)
--- Style aliases for macOS-like menu.conf files.
+-- opts.read_options(o)
+opts.read_options(o, 'menu_style')
+-- Style aliases for macOS-like menu_style.conf files.
 if o.font_name ~= '' then o.font = o.font_name end
 if o.hover_bg ~= '' then o.hover = o.hover_bg end
 if o.hover_text == '' then o.hover_text = o.text end

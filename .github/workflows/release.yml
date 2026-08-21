@@ -105,7 +105,7 @@ jobs:
               # 确保 script-opts 目录存在
               mkdir -p "$temp_dir/script-opts"
               # 复制菜单配置并覆盖（-f 强制覆盖）
-              cp -f "$conf_file" "$temp_dir/script-opts/menu.conf"
+              cp -f "$conf_file" "$temp_dir/script-opts/menu_style.conf"
               # 复制全局配置并覆盖（-f 强制覆盖）
               cp -f mpv.conf input.conf "$temp_dir/"
 
