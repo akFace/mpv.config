@@ -416,7 +416,7 @@ function open_menu_select(menu_items, is_time)
         end,
         closed = function()
             show_message("", 0)
-            input.terminate()
+            -- input.terminate()
             perform_cancel_active_request()
         end,
     })

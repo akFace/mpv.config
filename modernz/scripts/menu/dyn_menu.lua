@@ -13,7 +13,7 @@ local o = {
     max_title_length = 80,
     max_playlist_items = 0,
 }
-opts.read_options(o, nil, 'dyn_menu')   -- 读取 script-opts/dyn_menu.conf
+opts.read_options(o, 'dyn_menu')   -- 读取 script-opts/dyn_menu.conf
 -- ... 其余代码原样不变
 
 local menu_native = 'menu'               -- dll client name

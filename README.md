@@ -9,8 +9,9 @@
 - 使用原生 mpv 播放器，配置/播放器分离，无需担心播放器无法更新到最新版
 - 集成进度条缩略图预览
 - 集成在线中文字幕搜索
-- 支持全网弹幕加载，集成插件
+- 支持全网弹幕在线加载
 - 集成 Anime4K 超分画质，实时提升画质
+- 支持多种视频着色器滤镜
 - 支持插帧模式功能，提升流畅度
 - 支持 360°VR 全景视频
 - 可视化调节均衡器
@@ -51,7 +52,7 @@ Windows: C:/Users/%username%/AppData/Roaming/mpv/
 macOS:   ~/Library/Application Support/mpv/
 ```
 
-> ⚠️ **提示**：若你使用的是 mpv.net 播放器，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpv`改为`mpv_path=mpvnet`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
+> ⚠️ **提示**：若你使用的是 mpv.net 播放器，如果出现偶尔无法加载缩略图，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpv`改为`mpv_path=mpvnet`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
 >
 > - 其他平台可能会因为 [uosc_danmaku](https://github.com/Tony15246/uosc_danmaku/issues/194) 插件导致无法打开， [右键菜单故障排查文档](https://github.com/akFace/mpv-menu-plugin-next/blob/main/doc/README.md#%E5%89%AA%E8%B4%B4%E6%9D%BF)，请自查解决方案。
 
@@ -114,4 +115,5 @@ macos-dark：
 - [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
 - [play-with-mpv](https://github.com/akFace/play-with-mpv)
 - [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu)
+- [awesome-mpv](https://github.com/stax76/awesome-mpv)
 - [mpv 中文配置手册](https://hooke007.github.io/official_man/index.html)
