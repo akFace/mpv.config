@@ -102,6 +102,16 @@ jobs:
               echo "Creating $temp_dir"
               # 复制整个皮肤目录（包含所有子文件夹）
               cp -r "$skin" "$temp_dir"
+
+              # ---------- 新增：合并 common 文件夹 ----------
+              if [ -d "common" ]; then
+                echo "Merging common into $temp_dir"
+                cp -rf common/. "$temp_dir/"
+              else
+                echo "Warning: common directory not found, skipping merge"
+              fi
+              # ---------------------------------------------
+
               # 确保 script-opts 目录存在
               mkdir -p "$temp_dir/script-opts"
               # 复制菜单配置并覆盖（-f 强制覆盖）
