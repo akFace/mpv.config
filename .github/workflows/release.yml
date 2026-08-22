@@ -3,7 +3,7 @@ name: Auto Build and Release
 on:
   push:
     branches:
-      - fix
+      - master
     paths-ignore:
       - "README.md"
       - "preview/**"
@@ -102,7 +102,7 @@ jobs:
           tag_name: ${{ steps.release_info.outputs.NEW_TAG }}
           name: ${{ steps.release_info.outputs.NEW_TAG }}
           body_path: release_body.txt
-          prerelease: true
+          prerelease: false
           files: dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
