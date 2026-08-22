@@ -3,7 +3,7 @@ name: Auto Build and Release
 on:
   push:
     branches:
-      - master
+      - fix
     paths-ignore:
       - "README.md"
       - "preview/**"
@@ -22,6 +22,7 @@ jobs:
         with:
           fetch-depth: 0
 
+      # ---------- 版本生成和 Release Notes ----------
       - name: Generate Version and Release Notes
         id: release_info
         shell: bash
@@ -78,66 +79,30 @@ jobs:
 
           echo "$COMMITS" >> release_body.txt
 
-      - name: Create ZIP Archives
-        run: |
-          # 检查皮肤目录是否存在
-          for skin in modernz uosc; do
-            if [ ! -d "$skin" ]; then
-              echo "Error: $skin directory not found!"
-              exit 1
-            fi
-          done
+      # ---------- 设置 Node.js 环境 ----------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
-          # 定义菜单配置 (suffix:config_file)
-          menu_configs=("default:menu-default.conf" "macos-white:menu-macos-white.conf" "macos-dark:menu-macos-dark.conf")
-          for entry in "${menu_configs[@]}"; do
-            suffix="${entry%:*}"
-            conf_file="${entry#*:}"
-            if [ ! -f "$conf_file" ]; then
-              echo "Warning: $conf_file not found, skipping this menu config"
-              continue
-            fi
-            for skin in modernz uosc; do
-              temp_dir="${skin}_${suffix}"
-              echo "Creating $temp_dir"
-              # 复制整个皮肤目录（包含所有子文件夹）
-              cp -r "$skin" "$temp_dir"
+      # ---------- 安装依赖 ----------
+      - name: Install Dependencies
+        run: npm install
 
-              # ---------- 新增：合并 common 文件夹 ----------
-              if [ -d "common" ]; then
-                echo "Merging common into $temp_dir"
-                cp -rf common/. "$temp_dir/"
-              else
-                echo "Warning: common directory not found, skipping merge"
-              fi
-              # ---------------------------------------------
+      # ---------- 替换原有的 Create ZIP Archives 步骤 ----------
+      - name: Build ZIP Archives with Node.js
+        run: node build.js
+        env:
+          RELEASE_VERSION: ${{ steps.release_info.outputs.NEW_TAG }}
 
-              # 确保 script-opts 目录存在
-              mkdir -p "$temp_dir/script-opts"
-              # 复制菜单配置并覆盖（-f 强制覆盖）
-              cp -f "$conf_file" "$temp_dir/script-opts/menu_style.conf"
-              # 复制全局配置并覆盖（-f 强制覆盖）
-              cp -f mpv.conf input.conf "$temp_dir/"
-
-              # 写入当前打包版本号
-              # 版本号与本次 GitHub Release 的 Tag 保持一致，例如：v1.2.3
-              printf '%s\n' "${{ steps.release_info.outputs.NEW_TAG }}" > "$temp_dir/config-version"
-
-              # 打包
-              zip -r "${temp_dir}.zip" "$temp_dir"
-              # 清理临时目录
-              rm -rf "$temp_dir"
-            done
-          done
-
+      # ---------- 创建 GitHub Release（文件路径改为 dist/*.zip） ----------
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release_info.outputs.NEW_TAG }}
           name: ${{ steps.release_info.outputs.NEW_TAG }}
           body_path: release_body.txt
-          files: |
-            *.zip
-
+          prerelease: true
+          files: dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
