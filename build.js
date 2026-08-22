@@ -4,23 +4,22 @@ const { execSync } = require("child_process");
 const { ZipArchive } = require("archiver");
 
 // ---------- 配置 ----------
+const BASE_SRC = "src"; // 所有源文件位于此目录
 const SKINS = ["modernz", "uosc"];
 const MENU_CONFIGS = [
   { suffix: "default", file: "menu-default.conf" },
   { suffix: "macos-white", file: "menu-macos-white.conf" },
   { suffix: "macos-dark", file: "menu-macos-dark.conf" },
 ];
-const COMMON_DIR = "common";
+const COMMON_DIR = path.join(BASE_SRC, "common");
 const OUTPUT_DIR = "dist";
-const ROOT_FILES = ["mpv.conf", "input.conf"];
+const ROOT_FILES = ["mpv.conf", "input.conf"]; // 这些文件也在 src 根目录下
 
 // ---------- 获取版本号 ----------
 function getVersion() {
-  // 优先使用环境变量
   if (process.env.RELEASE_VERSION) {
     return process.env.RELEASE_VERSION;
   }
-  // 本地开发：从 Git tag 自动递增
   try {
     const lastTag = execSync("git describe --tags --abbrev=0", {
       encoding: "utf8",
@@ -58,10 +57,19 @@ async function build() {
   await fs.ensureDir(OUTPUT_DIR);
   await fs.emptyDir(OUTPUT_DIR);
 
+  // 检查源目录是否存在
+  if (!(await fs.pathExists(BASE_SRC))) {
+    console.error(
+      `❌ 源目录 "${BASE_SRC}" 不存在！请确保所有源文件已放入 src/ 目录。`
+    );
+    process.exit(1);
+  }
+
   // 检查皮肤目录
   for (const skin of SKINS) {
-    if (!(await fs.pathExists(skin))) {
-      console.error(`❌ 皮肤目录 "${skin}" 不存在！`);
+    const skinPath = path.join(BASE_SRC, skin);
+    if (!(await fs.pathExists(skinPath))) {
+      console.error(`❌ 皮肤目录 "${skinPath}" 不存在！`);
       process.exit(1);
     }
   }
@@ -69,7 +77,7 @@ async function build() {
   for (const skin of SKINS) {
     for (const menu of MENU_CONFIGS) {
       const suffix = menu.suffix;
-      const menuFile = menu.file;
+      const menuFile = path.join(BASE_SRC, menu.file); // 菜单配置也在 src 下
 
       if (!(await fs.pathExists(menuFile))) {
         console.warn(`⚠️  跳过 ${skin}_${suffix}：${menuFile} 不存在`);
@@ -77,11 +85,12 @@ async function build() {
       }
 
       const tempDir = `temp_${skin}_${suffix}`;
+      const skinSrc = path.join(BASE_SRC, skin);
       console.log(`🔄 处理 ${skin}_${suffix} ...`);
 
       try {
         // 1. 复制皮肤
-        await fs.copy(skin, tempDir);
+        await fs.copy(skinSrc, tempDir);
 
         // 2. 合并 common
         if (await fs.pathExists(COMMON_DIR)) {
@@ -97,13 +106,15 @@ async function build() {
           overwrite: true,
         });
 
-        // 5. 复制根目录配置文件
+        // 5. 复制根目录的 mpv.conf 和 input.conf（现在也在 src 下）
         for (const file of ROOT_FILES) {
-          const src = path.join(".", file);
-          if (await fs.pathExists(src)) {
-            await fs.copy(src, path.join(tempDir, file), { overwrite: true });
+          const srcFile = path.join(BASE_SRC, file);
+          if (await fs.pathExists(srcFile)) {
+            await fs.copy(srcFile, path.join(tempDir, file), {
+              overwrite: true,
+            });
           } else {
-            console.warn(`⚠️  根目录缺少 ${file}，将跳过`);
+            console.warn(`⚠️  源目录缺少 ${srcFile}，将跳过`);
           }
         }
 
