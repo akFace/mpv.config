@@ -52,9 +52,9 @@ Windows: C:/Users/%username%/AppData/Roaming/mpv/
 macOS:   ~/Library/Application Support/mpv/
 ```
 
-> ⚠️ **提示**：若你使用的是 mpv.net 播放器，如果出现偶尔无法加载缩略图，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpv`改为`mpv_path=mpvnet`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
+> ⚠️ **提示**：若你使用的是 mpv.net 播放器，出现偶尔无法加载缩略图的情况，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpv`改为`mpv_path=mpvnet`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
 >
-> - 其他平台可能会因为 [uosc_danmaku](https://github.com/Tony15246/uosc_danmaku/issues/194) 插件导致无法打开， [右键菜单故障排查文档](https://github.com/akFace/mpv-menu-plugin-next/blob/main/doc/README.md#%E5%89%AA%E8%B4%B4%E6%9D%BF)，请自查解决方案。
+> - 其他平台可能会因为 [uosc_danmaku](https://github.com/Tony15246/uosc_danmaku/issues/194) 插件导致无法打开， [右键菜单故障排查文档](https://github.com/akFace/mpv-menu-plugin-next/blob/main/doc/README.md#linux)，请自查解决方案。
 
 ### **[👉 查看常用快捷键！推荐记住一些常用的即可](https://github.com/akFace/mpv.config/wiki/%E5%BF%AB%E6%8D%B7%E9%94%AE)**
 
@@ -66,7 +66,7 @@ macOS:   ~/Library/Application Support/mpv/
 - 跳过片头片尾：在配置文件夹中`mpv.conf`,打开编辑，可看到注释的跳过片头片尾，把注释的#号去掉，填写上自定义的片头片尾时间重启播放器即可
 - 直接播放 B 站、YouTube 视频或其他链接：安装 [yt-dlp](https://github.com/yt-dlp/yt-dlp/releases) ，进入下载 yt-dlp.exe，放到 `mpv.exe` 同目录下，即：播放器安装目录。重启即可直接粘贴视频页面链接，不过更推荐下边的浏览器插件
 - **推荐：** 油猴脚本 👉 [play-with-mpv 使用 mpv 播放网页中的视频](https://github.com/akFace/play-with-mpv)
-- **语言/language:** The language setting for the modernz theme is in `script-opts/modernz.conf`, and the language setting for the uosc theme is in `script-opts/uosc.conf`. You can see it by searching for the keyword `language` in the file.，Download `input-en.conf` and rename it to `input.conf`, then replace the original file
+- **语言/language:** The language setting for the modernz theme is in `script-opts/modernz.conf`, and the language setting for the uosc theme is in `script-opts/uosc.conf`. You can see it by searching for the keyword `language` in the file.，Download [`input-en.conf`](https://github.com/akFace/mpv.config/blob/master/src/input-en.conf) and rename it to `input.conf`, then replace the original file
 
 ## 如何更新到最新版
 
