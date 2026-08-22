@@ -1,0 +1,12 @@
+{
+  "name": "mpv-config-builder",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "archiver": "^8.0.0",
+    "fs-extra": "^11.4.0"
+  }
+}
