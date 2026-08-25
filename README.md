@@ -81,7 +81,7 @@ macOS:   ~/Library/Application Support/mpv/
 
 ### 主题皮肤 2（uosc）
 
-![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-03-18_16-51-00.jpg)
+![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-08-24_03-00-53.jpg)
 
 ### 功能强大的右键菜单
 
