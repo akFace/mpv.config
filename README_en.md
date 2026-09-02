@@ -69,8 +69,8 @@ macOS:   ~/Library/Application Support/mpv/
 
 ## How to Update to the Latest Version
 
-- Player update: Simply download and install the latest [🎬 mpv.net player](https://github.com/mpvnet-player/mpv.net/releases) or [mpv native player](https://mpv.io/).
-- Configuration/theme update: Simply [🎯 download the latest version](https://github.com/akFace/mpv.config/releases), extract it, and overwrite the existing files.
+- Player update: Simply download and install the latest [🎬 mpv.net player](https://github.com/mpvnet-player/mpv.net/releases) or [mpv player](https://mpv.io/).
+- Configuration/theme update: Simply [🎯 download the latest version](https://github.com/akFace/mpv.config/releases), extract it, and overwrite the existing files. (Back up your files before overwriting)
 
 ## Open-source project
 
