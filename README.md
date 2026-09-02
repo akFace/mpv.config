@@ -3,6 +3,8 @@
 > - mpv 配置文件支持 Windows、macOS、Linux，全平台带有一致的右键菜单功能
 > - The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms.
 
+#### 中文 | [English](https://github.com/akFace/mpv.config/blob/master/README_en.md)
+
 ## 简要说明
 
 - 两套主题皮肤`modernz`、`uosc`，漂亮的现代化 UI 无边框设计
@@ -44,7 +46,7 @@
       └── input.conf
 ```
 
-- 一般 mpv 安装版`setup-install`（非 `Portable` 便携版）全局配置文件目录：
+一般 mpv 安装版`setup-install`（非 `Portable` 便携版）全局配置文件目录：
 
 ```
 Linux:   ~/.config/mpv/
