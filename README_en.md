@@ -20,7 +20,6 @@
 - Visual equalizer controls
 - Powerful and consistent context menu functionality across Windows, macOS, and Linux
 - Lightweight and extremely simple, with just two steps to get started
-- [>> View theme preview screenshots](https://github.com/akFace/mpv.config#%E9%A2%84%E8%A7%88%E6%95%88%E6%9E%9C%E5%9B%BE)
 
 ## Installation
 
@@ -71,6 +70,11 @@ macOS:   ~/Library/Application Support/mpv/
 
 - Player update: Simply download and install the latest [🎬 mpv.net player](https://github.com/mpvnet-player/mpv.net/releases) or [mpv player](https://mpv.io/).
 - Configuration/theme update: Simply [🎯 download the latest version](https://github.com/akFace/mpv.config/releases), extract it, and overwrite the existing files. (Back up your files before overwriting)
+
+## Preview
+
+![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-09-02_22-25-41.jpg)
+![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-09-02_22-31-00.jpg)
 
 ## Open-source project
 
