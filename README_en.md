@@ -4,7 +4,7 @@
 
 #### [中文](https://github.com/akFace/mpv.config/blob/master/README.md) | English
 
-- Note: This document was translated by machine-translated and may contain some inaccuracies.
+- Note: This document was translated by `AI-translated` and may contain some inaccuracies.
 
 ## Overview
 
@@ -14,10 +14,10 @@
 - Integrated online Chinese subtitle search
 - Supports online loading of danmaku from across the web
 - Integrated Anime4K upscaling for real-time image quality enhancement
-- Supports multiple video shader filters
+- Supports multiple video shader filters：[shaders](https://github.com/akFace/mpv.config/tree/master/src/common/shaders)
 - Supports frame interpolation mode for smoother playback
 - Supports 360° VR panoramic videos
-- Visual equalizer controls
+- Visual equalizer controls, Audio channel switch, Automatic HDR, Decoding switching, and Color grading...
 - Powerful and consistent context menu functionality across Windows, macOS, and Linux
 - Lightweight and extremely simple, with just two steps to get started
 
