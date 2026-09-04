@@ -13,19 +13,37 @@
 - 集成在线中文字幕搜索
 - 支持全网弹幕在线加载
 - 集成 Anime4K 超分画质，实时提升画质
-- 支持多种视频着色器滤镜：[shaders](https://github.com/akFace/mpv.config/tree/master/src/common/shaders)
+- 支持多种视频着色器滤镜：[shaders 滤镜选择指南](https://github.com/akFace/mpv.config/wiki/%E8%A7%86%E9%A2%91%E6%BB%A4%E9%95%9C%E9%80%89%E6%8B%A9%E6%8C%87%E5%8D%97)
 - 支持插帧模式功能，提升流畅度
 - 支持 360°VR 全景视频
 - 可视化调节 eq 均衡器、声道切换、自动 HDR、解码切换、调色等常用功能
 - Windows、macOS、Linux 全平台一致的强大右键菜单功能
-- 轻量级，超简单，只需两个步骤即可完成享用
+- 轻量级，超简单，只需简单几步骤即可完成享用
 - [>>查看主题预览效果截图](https://github.com/akFace/mpv.config#%E9%A2%84%E8%A7%88%E6%95%88%E6%9E%9C%E5%9B%BE)
 - [>>常见相关问题](https://github.com/akFace/mpv.config#一些常用设置文档可选)
 
 ## 使用方法
 
-- 先安装播放器：**Windows：**[官方构建版本-推荐](https://github.com/mpv-player/mpv/releases)、[每日构建版本-推荐](https://github.com/zhongfly/mpv-winbuild/releases)、 [shinchiro 版本](https://github.com/shinchiro/mpv-winbuild-cmake/releases)、[mpv.net 版本](https://github.com/mpvnet-player/mpv.net/releases)。**MacOS、Linux ：**[mpv 官网下载](https://mpv.io/installation/)
-- [🎯 点击下载](https://github.com/akFace/mpv.config/releases) 你想要的主题皮肤（每个压缩包都已包含完整功能的配置）`modernz`和`uosc`，并解压
+### 1. 先安装播放器
+
+- **Windows：**
+  - [官方构建版本（推荐）](https://github.com/mpv-player/mpv/releases)
+  - [每日构建版本（推荐）](https://github.com/zhongfly/mpv-winbuild/releases)
+  - [shinchiro 版本](https://github.com/shinchiro/mpv-winbuild-cmake/releases)
+  - [mpv.net 版本](https://github.com/mpvnet-player/mpv.net/releases)
+- **macOS、Linux：** [mpv 官网下载](https://mpv.io/installation/)
+
+### 2. 下载主题配置
+
+[🎯 点击下载](https://github.com/akFace/mpv.config/releases) 你需要的主题皮肤，目前提供：
+
+- `modernz`
+- `uosc`
+
+每个压缩包均包含完整功能的配置，下载后解压即可。
+
+### 3. 配置播放器
+
 - **以下案例以 Windows 系统为例： ① 和 ② 根据自己选择的播放器按对应教程来即可**
 - **①. mpv 原生播放器**：解压/安装播放器后，在播放器根目录(`mpv.exe` 同目录)下新建名为 `portable_config` 文件夹，作为`配置文件夹`
 - **②. mpv.net 播放器**：如图所示，右键>配置>打开配置文件夹或者`Ctrl + f`快捷键打开`配置文件夹`
