@@ -13,10 +13,10 @@
 - 集成在线中文字幕搜索
 - 支持全网弹幕在线加载
 - 集成 Anime4K 超分画质，实时提升画质
-- 支持多种视频着色器滤镜
+- 支持多种视频着色器滤镜：[shaders](https://github.com/akFace/mpv.config/tree/master/src/common/shaders)
 - 支持插帧模式功能，提升流畅度
 - 支持 360°VR 全景视频
-- 可视化调节均衡器
+- 可视化调节 eq 均衡器、声道切换、自动 HDR、解码切换、调色等常用功能
 - Windows、macOS、Linux 全平台一致的强大右键菜单功能
 - 轻量级，超简单，只需两个步骤即可完成享用
 - [>>查看主题预览效果截图](https://github.com/akFace/mpv.config#%E9%A2%84%E8%A7%88%E6%95%88%E6%9E%9C%E5%9B%BE)
@@ -56,12 +56,14 @@ macOS:   ~/Library/Application Support/mpv/
 
 > ⚠️ **提示**：若你使用的是 mpv.net 播放器，出现偶尔无法加载缩略图的情况，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpv`改为`mpv_path=mpvnet`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
 >
-> - 其他平台可能会因为 [uosc_danmaku](https://github.com/Tony15246/uosc_danmaku/issues/194) 插件导致无法打开， [右键菜单故障排查文档](https://github.com/akFace/mpv-menu-plugin-next/blob/main/doc/README.md#linux)，请自查解决方案。
+> - 其他平台相关： [uosc_danmaku-issues](https://github.com/Tony15246/uosc_danmaku/issues/194)，[右键菜单故障排查文档](https://github.com/akFace/mpv-menu-plugin-next/blob/main/doc/README.md#linux)
 
 ### **[👉 查看常用快捷键！推荐记住一些常用的即可](https://github.com/akFace/mpv.config/wiki/%E5%BF%AB%E6%8D%B7%E9%94%AE)**
 
 ### 一些常用设置&文档（可选）
 
+- Uosc 主题自定义：[Uosc](https://github.com/tomasklaen/uosc#options)
+- ModernZ 主题自定义：[ModernZ](https://github.com/Samillion/ModernZ#customization)
 - 弹幕默认样式在配置文件夹`script-opts/uosc_danmaku.conf`下，要修改请使用文本编辑器打开编辑
 - 弹幕相关配置：[查看文档](https://github.com/Tony15246/uosc_danmaku#%E7%9B%AE%E5%BD%95)
 - **关于弹幕流畅度问题**，目前本人的设备屏幕是 4k60hz，要打开`video-sync=display-resample`才流畅，但有些用户的设备打开此设置开倍速播放会导致声音卡问题，因此现在默认关闭，需要设置的请打开 mpv.conf 文件编辑，删除此行代码最前面的 # 号

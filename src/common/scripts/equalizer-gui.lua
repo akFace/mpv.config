@@ -9,6 +9,21 @@ local utils = require("mp.utils")
 -- EQ 总开关状态 (默认开启)
 local eq_enabled = true
 
+
+-- 音频声道模式
+-- auto   = 自动
+-- stereo = 立体声
+-- left   = 左声道
+-- right  = 右声道
+local channel_mode = "auto"
+
+local channel_mode_labels = {
+    auto = "Auto",
+    stereo = "Stereo",
+    left = "Left",
+    right = "Right"
+}
+
 -- 10 段 EQ 配置 (对应 FFmpeg equalizer 滤镜频率)
 local bands = {
     { label = "31.5", freq = "31.25", val = 0 },
@@ -66,10 +81,38 @@ local colors = {
     line = "&H444444&"
 }
 
--- 应用音频 EQ 滤镜到 mpv 引擎
+-- 获取当前声道模式对应的 pan 滤镜
+-- 左声道：把第 1 个输入声道复制到左右输出
+-- 右声道：把第 2 个输入声道复制到左右输出
+local function get_channel_filter()
+    if channel_mode == "left" then
+        return "pan=stereo|c0=c0|c1=c0"
+    elseif channel_mode == "right" then
+        return "pan=stereo|c0=c1|c1=c1"
+    end
+
+    return nil
+end
+
+-- 应用音频 EQ + 声道模式到 mpv 引擎
 local function apply_audio_eq()
+    -- Auto：由 mpv 自动决定；
+    -- Stereo / Left / Right：最终输出为立体声。
+    if channel_mode == "auto" then
+        mp.set_property("audio-channels", "auto")
+    else
+        mp.set_property("audio-channels", "stereo")
+    end
+
+    local channel_filter = get_channel_filter()
+
+    -- EQ 关闭时，也保留 Left / Right 声道选择。
     if not eq_enabled then
-        mp.commandv("af", "remove", "@eq_gui")
+        if channel_filter then
+            mp.commandv("af", "set", "@eq_gui:lavfi=[" .. channel_filter .. "]")
+        else
+            mp.commandv("af", "remove", "@eq_gui")
+        end
         return
     end
 
@@ -77,8 +120,26 @@ local function apply_audio_eq()
     for _, b in ipairs(bands) do
         table.insert(filters, string.format("equalizer=f=%s:width_type=o:w=1:g=%.1f", b.freq, b.val))
     end
+
+    -- 声道滤镜放在 EQ 后面，EQ 调节时不会丢失声道模式。
+    if channel_filter then
+        table.insert(filters, channel_filter)
+    end
+
     local filter_str = "@eq_gui:lavfi=[" .. table.concat(filters, ",") .. "]"
     mp.commandv("af", "set", filter_str)
+end
+
+-- 设置声道模式
+local function set_channel_mode(mode)
+    if not channel_mode_labels[mode] then
+        return
+    end
+
+    channel_mode = mode
+    apply_audio_eq()
+
+    mp.osd_message("Audio Channel: " .. channel_mode_labels[mode], 2)
 end
 
 -- 将增益数据与开关状态写入本地 JSON 配置文件
@@ -538,6 +599,24 @@ end
 -- 打开/关闭 快捷键
 mp.register_script_message("toggle-equalizer-gui", toggle_ui)
 -- mp.add_key_binding("e", "toggle-equalizer-gui", toggle_ui)
+
+-- 同时提供脚本消息，方便在 input.conf 中自定义快捷键。
+mp.register_script_message("audio-channel-auto", function()
+    set_channel_mode("auto")
+end)
+
+mp.register_script_message("audio-channel-stereo", function()
+    set_channel_mode("stereo")
+end)
+
+mp.register_script_message("audio-channel-left", function()
+    set_channel_mode("left")
+end)
+
+mp.register_script_message("audio-channel-right", function()
+    set_channel_mode("right")
+end)
+
 mp.add_key_binding("ESC", "close-equalizer-gui", function()
     if is_visible then toggle_ui() end
 end)
