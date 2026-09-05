@@ -10,11 +10,11 @@
 - 两套主题皮肤`modernz`、`uosc`，漂亮的现代化 UI 无边框设计
 - 使用原生 mpv 播放器，配置/播放器分离，无需担心播放器无法更新到最新版
 - 集成进度条缩略图预览
-- 集成在线中文字幕搜索
-- 支持全网弹幕在线加载
+- 集成在线中文字幕搜索，全网弹幕在线加载
 - 集成 Anime4K 超分画质，实时提升画质
-- 支持多种视频着色器滤镜：[shaders 滤镜选择指南](https://github.com/akFace/mpv.config/wiki/%E8%A7%86%E9%A2%91%E6%BB%A4%E9%95%9C%E9%80%89%E6%8B%A9%E6%8C%87%E5%8D%97)
+- 支持多种视频着色器滤镜：[shaders 滤镜说明指南](https://github.com/akFace/mpv.config/wiki/%E8%A7%86%E9%A2%91%E6%BB%A4%E9%95%9C%E9%80%89%E6%8B%A9%E6%8C%87%E5%8D%97)
 - 支持插帧模式功能，提升流畅度
+- 视频滤镜、Anime4K 可右键菜单按需加载
 - 支持 360°VR 全景视频
 - 可视化调节 eq 均衡器、声道切换、自动 HDR、解码切换、调色等常用功能
 - Windows、macOS、Linux 全平台一致的强大右键菜单功能
@@ -40,7 +40,7 @@
 - `modernz`
 - `uosc`
 
-每个压缩包均包含完整功能的配置，下载后解压即可。
+每个主题皮肤压缩包均包含完整功能的配置，下载后解压即可。
 
 ### 3. 配置播放器
 
@@ -80,8 +80,8 @@ macOS:   ~/Library/Application Support/mpv/
 
 ### 一些常用设置&文档（可选）
 
-- Uosc 主题自定义：[Uosc](https://github.com/tomasklaen/uosc#options)
-- ModernZ 主题自定义：[ModernZ](https://github.com/Samillion/ModernZ#customization)
+- Uosc 主题自定义文档：[Uosc](https://github.com/tomasklaen/uosc#options)
+- ModernZ 主题自定义文档：[ModernZ](https://github.com/Samillion/ModernZ#customization)
 - 弹幕默认样式在配置文件夹`script-opts/uosc_danmaku.conf`下，要修改请使用文本编辑器打开编辑
 - 弹幕相关配置：[查看文档](https://github.com/Tony15246/uosc_danmaku#%E7%9B%AE%E5%BD%95)
 - **关于弹幕流畅度问题**，目前本人的设备屏幕是 4k60hz，要打开`video-sync=display-resample`才流畅，但有些用户的设备打开此设置开倍速播放会导致声音卡问题，因此现在默认关闭，需要设置的请打开 mpv.conf 文件编辑，删除此行代码最前面的 # 号
