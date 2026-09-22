@@ -7,7 +7,7 @@ local mp = require("mp")
 local utils = require("mp.utils")
 
 -- EQ 总开关状态 (默认开启)
-local eq_enabled = true
+local eq_enabled = false
 
 
 -- 音频声道模式

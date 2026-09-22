@@ -14,7 +14,7 @@
 - Integrated online Chinese subtitle search
 - Supports online loading of danmaku from across the web
 - Integrated Anime4K upscaling for real-time image quality enhancement
-- Supports multiple video shader filters：[shaders](https://github.com/akFace/mpv.config/tree/master/src/common/shaders)
+- Supports multiple video shader filters：[shaders](https://github.com/akFace/mpv.config/wiki/Shader---Video-Filter-Selection-Guide)
 - Supports frame interpolation mode for smoother playback
 - Supports 360° VR panoramic videos
 - Visual equalizer controls, Audio channel switch, Automatic HDR, Decoding switching, and Color grading...
@@ -92,10 +92,12 @@ Thanks to the following open-source projects for making this possible:
 - [mpv-sub-assrt](https://github.com/dyphire/mpv-sub-assrt)
 - [uosc_danmaku](https://github.com/Tony15246/uosc_danmaku)
 - [Anime4K](https://github.com/bloc97/Anime4K)
+- [CuNNy](https://github.com/funnyplanter/CuNNy)
 - [mpv360](https://github.com/kasper93/mpv360)
 - [Equalizer-GUI](https://github.com/akFace/equalizer-gui)
 - [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
 - [play-with-mpv](https://github.com/akFace/play-with-mpv)
 - [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu)
 - [awesome-mpv](https://github.com/stax76/awesome-mpv)
+- [mpv_PlayKit](https://github.com/hooke007/mpv_PlayKit)
 - [mpv Chinese Configuration Manual](https://hooke007.github.io/official_man/index.html)
