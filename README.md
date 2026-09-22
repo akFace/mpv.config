@@ -88,7 +88,6 @@ macOS:   ~/Library/Application Support/mpv/
 - 跳过片头片尾：在配置文件夹中`mpv.conf`,打开编辑，可看到注释的跳过片头片尾，把注释的#号去掉，填写上自定义的片头片尾时间重启播放器即可
 - 直接播放 B 站、YouTube 视频或其他链接：安装 [yt-dlp](https://github.com/yt-dlp/yt-dlp/releases) ，进入下载 yt-dlp.exe，放到 `mpv.exe` 同目录下，即：播放器安装目录。重启即可直接粘贴视频页面链接，不过更推荐下边的浏览器插件
 - **推荐：** 油猴脚本 👉 [play-with-mpv 使用 mpv 播放网页中的视频](https://github.com/akFace/play-with-mpv)
-- **语言/language:** The language setting for the modernz theme is in `script-opts/modernz.conf`, and the language setting for the uosc theme is in `script-opts/uosc.conf`. You can see it by searching for the keyword `language` in the file.，Download [`input-en.conf`](https://github.com/akFace/mpv.config/blob/master/src/input-en.conf) and rename it to `input.conf`, then replace the original file
 
 ## 如何更新到最新版
 
@@ -132,10 +131,12 @@ macos-dark：
 - [mpv-sub-assrt](https://github.com/dyphire/mpv-sub-assrt)
 - [uosc_danmaku](https://github.com/Tony15246/uosc_danmaku)
 - [Anime4K](https://github.com/bloc97/Anime4K)
+- [CuNNy](https://github.com/funnyplanter/CuNNy)
 - [mpv360](https://github.com/kasper93/mpv360)
 - [Equalizer-GUI](https://github.com/akFace/equalizer-gui)
 - [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
 - [play-with-mpv](https://github.com/akFace/play-with-mpv)
 - [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu)
 - [awesome-mpv](https://github.com/stax76/awesome-mpv)
+- [mpv_PlayKit](https://github.com/hooke007/mpv_PlayKit)
 - [mpv 中文配置手册](https://hooke007.github.io/official_man/index.html)
