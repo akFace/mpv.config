@@ -97,10 +97,16 @@ local function get_latest_release()
             playback_only = false,
         })
         if res and res.status == 0 and res.stdout then
-            local tag = res.stdout:match([["tag_name"%s*:%s*"([^"]+)"]])
-            if tag then
-                return tag
+            -- 优先尝试 JSON 解析
+            local ok, data = pcall(utils.parse_json, res.stdout)
+            if ok and type(data) == "table" and data.tag_name then
+                return data.tag_name
             end
+            -- 回退到模式匹配
+            local tag = res.stdout:match([["tag_name"%s*:%s*"([^"]+)"]])
+            if tag then return tag end
+            -- 都失败时记录原始响应
+            mp.msg.error("无法解析 tag_name，原始响应前 500 字符：\n" .. res.stdout:sub(1, 500))
         end
     end
     return nil
