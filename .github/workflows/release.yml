@@ -50,11 +50,11 @@ jobs:
 
           echo "NEW_TAG=$NEW_TAG" >> "$GITHUB_OUTPUT"
 
-          # 获取 Commit 日志
+          # 获取 Commit 日志：排除 README.md / README_en.md 相关文件变更
           if git rev-parse "$LAST_TAG" >/dev/null 2>&1; then
-            COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s")
+            COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s" -- . ':(exclude)README.md' ':(exclude)README_en.md')
           else
-            COMMITS=$(git log --pretty=format:"- %s")
+            COMMITS=$(git log --pretty=format:"- %s" -- . ':(exclude)README.md' ':(exclude)README_en.md')
           fi
 
           if [ -z "$COMMITS" ]; then
