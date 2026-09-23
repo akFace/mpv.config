@@ -76,7 +76,7 @@ macOS:   ~/Library/Application Support/mpv/
 >
 > - 其他平台相关： [uosc_danmaku-issues](https://github.com/Tony15246/uosc_danmaku/issues/194)，[右键菜单故障排查文档](https://github.com/akFace/mpv-menu-plugin-next/blob/main/doc/README.md#linux)
 
-### **[👉 查看常用快捷键！推荐记住一些常用的即可](https://github.com/akFace/mpv.config/wiki/%E5%BF%AB%E6%8D%B7%E9%94%AE)**
+### **[👉 查看常用快捷键！以及默认行为](https://github.com/akFace/mpv.config/wiki/%E5%BF%AB%E6%8D%B7%E9%94%AE)**
 
 ### 一些常用设置&文档（可选）
 
@@ -125,15 +125,16 @@ macos-dark：
 - [mpv-winbuild](https://github.com/zhongfly/mpv-winbuild)
 - [shinchiro](https://github.com/shinchiro/mpv-winbuild-cmake)
 - [mpv.net](https://github.com/mpvnet-player/mpv.net)
-- [Thumbfast](https://github.com/po5/thumbfast)
-- [UOSC](https://github.com/tomasklaen/uosc)
+- [thumbfast](https://github.com/po5/thumbfast)
+- [celebi](https://github.com/po5/celebi)
+- [uosc](https://github.com/tomasklaen/uosc)
 - [ModernZ](https://github.com/Samillion/ModernZ)
 - [mpv-sub-assrt](https://github.com/dyphire/mpv-sub-assrt)
 - [uosc_danmaku](https://github.com/Tony15246/uosc_danmaku)
 - [Anime4K](https://github.com/bloc97/Anime4K)
 - [CuNNy](https://github.com/funnyplanter/CuNNy)
 - [mpv360](https://github.com/kasper93/mpv360)
-- [Equalizer-GUI](https://github.com/akFace/equalizer-gui)
+- [equalizer-gui](https://github.com/akFace/equalizer-gui)
 - [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
 - [play-with-mpv](https://github.com/akFace/play-with-mpv)
 - [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu)
