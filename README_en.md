@@ -15,6 +15,7 @@
 - Supports online loading of danmaku from across the web
 - Integrated Anime4K upscaling for real-time image quality enhancement
 - Supports multiple video shader filters：[shaders](https://github.com/akFace/mpv.config/wiki/Shader---Video-Filter-Selection-Guide)
+- Video filters (Anime4K, FSRCNNX, CuNNy, ArtCNN, etc.) can be loaded on demand via the right-click menu.
 - Supports frame interpolation mode for smoother playback
 - Supports 360° VR panoramic videos
 - Visual equalizer controls, Audio channel switch, Automatic HDR, Decoding switching, and Color grading...

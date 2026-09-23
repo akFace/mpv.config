@@ -14,7 +14,7 @@
 - 集成 Anime4K 超分画质，实时提升画质
 - 支持多种视频着色器滤镜：[shaders 滤镜说明指南](https://github.com/akFace/mpv.config/wiki/%E8%A7%86%E9%A2%91%E6%BB%A4%E9%95%9C%E9%80%89%E6%8B%A9%E6%8C%87%E5%8D%97)
 - 支持插帧模式功能，提升流畅度
-- 视频滤镜、Anime4K 可右键菜单按需加载
+- 视频滤镜/Anime4K/FSRCNNX/CuNNy/ArtCNN 等，可右键菜单按需加载
 - 支持 360°VR 全景视频
 - 可视化调节 eq 均衡器、声道切换、自动 HDR、解码切换、调色等常用功能
 - Windows、macOS、Linux 全平台一致的强大右键菜单功能
