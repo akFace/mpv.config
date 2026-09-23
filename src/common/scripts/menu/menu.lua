@@ -1005,6 +1005,55 @@ render = function()
     overlay:update()
 end
 
+-- 定义一个函数，用来向不同的OSC发送“禁用”或“启用”命令
+local saved_modernz_visibility = nil
+local saved_osd_level = nil
+local osd_restore_token = 0
+
+local function set_osc_visibility(enable)
+    local script_id = mp.get_script_name()
+
+    if enable then
+        -- 恢复 ModernZ
+        if saved_modernz_visibility ~= nil then
+            pcall(mp.commandv, 'script-message-to', 'modernz', 'osc-visibility', saved_modernz_visibility, 'yes')
+            saved_modernz_visibility = nil
+        end
+        pcall(mp.commandv, 'script-message-to', 'uosc', 'disable-elements', script_id, '')
+        pcall(mp.commandv, 'script-message', 'osc-visibility', 'auto')
+
+        -- 延迟恢复 osd-level，且仅在用户未改过时才恢复
+        if saved_osd_level ~= nil then
+            local level = saved_osd_level
+            saved_osd_level = nil
+            osd_restore_token = osd_restore_token + 1
+            local token = osd_restore_token
+            mp.add_timeout(0.05, function()
+                if token == osd_restore_token then
+                    if mp.get_property_native('osd-level') == 0 then
+                        mp.set_property_native('osd-level', level)
+                    end
+                end
+            end)
+        end
+    else
+        osd_restore_token = osd_restore_token + 1
+
+        local mz = mp.get_property_native('user-data/osc/visibility')
+        if mz ~= nil then
+            saved_modernz_visibility = mz
+            pcall(mp.commandv, 'script-message-to', 'modernz', 'osc-visibility', 'never', 'yes')
+        end
+        pcall(mp.commandv, 'script-message-to', 'uosc', 'disable-elements', script_id, 'timeline,controls')
+        pcall(mp.commandv, 'script-message', 'osc-visibility', 'never')
+
+        if saved_osd_level == nil then
+            saved_osd_level = mp.get_property_native('osd-level')
+            mp.set_property_native('osd-level', 0)
+        end
+    end
+end
+
 local function remove_bindings()
     for n,_ in pairs(key_bindings) do pcall(mp.remove_key_binding,n) end
     key_bindings={}
@@ -1020,6 +1069,7 @@ local function hide()
     cancel_hover_timer()
     if not visible then clear(); return end
     visible=false
+    set_osc_visibility(true)
     open_path={}
     scroll_offsets={}
     rects={}
@@ -1293,6 +1343,7 @@ local function show(attempt)
         local mx,my=get_mouse()
         anchor_x,anchor_y=(mx or 0)+2,(my or 0)+2
         visible=true
+        set_osc_visibility(false)
         open_path={}
         scroll_offsets={}
         rects={}
