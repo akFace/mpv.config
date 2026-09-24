@@ -76,7 +76,7 @@ macOS:   ~/Library/Application Support/mpv/
 >
 > - 其他平台相关： [uosc_danmaku-issues](https://github.com/Tony15246/uosc_danmaku/issues/194)，[右键菜单故障排查文档](https://github.com/akFace/mpv-menu-plugin-next/blob/main/doc/README.md#linux)
 
-### **[👉 查看常用快捷键！以及默认行为](https://github.com/akFace/mpv.config/wiki/%E5%BF%AB%E6%8D%B7%E9%94%AE)**
+### **[👉 查看常用快捷键&默认行为](https://github.com/akFace/mpv.config/wiki/%E5%BF%AB%E6%8D%B7%E9%94%AE)**
 
 ### 一些常用设置&文档（可选）
 
@@ -139,6 +139,7 @@ macos-dark：
 - [uosc_danmaku](https://github.com/Tony15246/uosc_danmaku)
 - [Anime4K](https://github.com/bloc97/Anime4K)
 - [CuNNy](https://github.com/funnyplanter/CuNNy)
+- [ArtCNN](https://github.com/Artoriuz/ArtCNN)
 - [mpv360](https://github.com/kasper93/mpv360)
 - [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu)
 - [awesome-mpv](https://github.com/stax76/awesome-mpv)

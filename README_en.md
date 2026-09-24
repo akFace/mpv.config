@@ -101,6 +101,7 @@ Thanks to the following open-source projects for making this possible:
 - [uosc_danmaku](https://github.com/Tony15246/uosc_danmaku)
 - [Anime4K](https://github.com/bloc97/Anime4K)
 - [CuNNy](https://github.com/funnyplanter/CuNNy)
+- [ArtCNN](https://github.com/Artoriuz/ArtCNN)
 - [mpv360](https://github.com/kasper93/mpv360)
 - [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu)
 - [awesome-mpv](https://github.com/stax76/awesome-mpv)
