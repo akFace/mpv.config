@@ -119,12 +119,18 @@ macos-dark：
 
 ## 相关链接
 
+自有插件：
+
+- [equalizer-gui](https://github.com/akFace/equalizer-gui)
+- [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
+- [play-with-mpv](https://github.com/akFace/play-with-mpv)
+- [scheme-handler-cross](https://github.com/akFace/scheme-handler-cross)
+
+---
+
 鸣谢以下开源项目提供的便利：
 
 - [mpv](https://github.com/mpv-player/mpv)
-- [mpv-winbuild](https://github.com/zhongfly/mpv-winbuild)
-- [shinchiro](https://github.com/shinchiro/mpv-winbuild-cmake)
-- [mpv.net](https://github.com/mpvnet-player/mpv.net)
 - [thumbfast](https://github.com/po5/thumbfast)
 - [celebi](https://github.com/po5/celebi)
 - [uosc](https://github.com/tomasklaen/uosc)
@@ -134,9 +140,6 @@ macos-dark：
 - [Anime4K](https://github.com/bloc97/Anime4K)
 - [CuNNy](https://github.com/funnyplanter/CuNNy)
 - [mpv360](https://github.com/kasper93/mpv360)
-- [equalizer-gui](https://github.com/akFace/equalizer-gui)
-- [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
-- [play-with-mpv](https://github.com/akFace/play-with-mpv)
 - [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu)
 - [awesome-mpv](https://github.com/stax76/awesome-mpv)
 - [mpv_PlayKit](https://github.com/hooke007/mpv_PlayKit)
