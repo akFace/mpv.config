@@ -115,7 +115,7 @@ macOS:   ~/Library/Application Support/mpv/
 ![image](./preview/Snipaste_2026-08-16_01-04-38.jpg)
 **macos-dark：**
 ![image](./preview/Snipaste_2026-08-16_01-10-14.jpg)
-**cyan-blue：**
+**teal-blue：**
 ![image](./preview/Snipaste_2026-09-26_15-31-59.jpg)
 
 ### 可视化均衡器 eq

@@ -27,7 +27,7 @@ const MENU_CONFIGS = [
     renameSkinConf: true,
   },
   { suffix: "macos-dark", file: "menu-macos-dark.conf", renameSkinConf: true },
-  { suffix: "cyan-blue", file: "menu-cyan-blue.conf", renameSkinConf: true },
+  { suffix: "teal-blue", file: "menu-teal-blue.conf", renameSkinConf: true },
   // { suffix: "purple", file: "menu-purple.conf", renameSkinConf: true },
 ];
 
