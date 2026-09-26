@@ -4,16 +4,36 @@ const { execSync } = require("child_process");
 const { ZipArchive } = require("archiver");
 
 // ---------- 配置 ----------
-const BASE_SRC = "src"; // 所有源文件位于此目录
+const BASE_SRC = "src";
 const SKINS = ["modernz", "uosc"];
+
+/**
+ * MENU_CONFIGS 说明：
+ *   - suffix:          打包产物的后缀（<skin>_<suffix>.zip）
+ *   - file:            src 根目录下的菜单样式文件
+ *   - renameSkinConf:  若为 true，则把
+ *                      src/<skin>/script-opts/<skin>-<suffix>.conf
+ *                      复制为 script-opts/<skin>.conf
+ *
+ * 不论 renameSkinConf 是否为 true，打包前都会清理
+ * 临时目录 script-opts/ 下所有 <skin>-*.conf 变体文件，
+ * 只保留 <skin>.conf（以及其它不属于变体命名规则的文件）。
+ */
 const MENU_CONFIGS = [
   { suffix: "default", file: "menu-default.conf" },
-  { suffix: "macos-white", file: "menu-macos-white.conf" },
-  { suffix: "macos-dark", file: "menu-macos-dark.conf" },
+  {
+    suffix: "macos-white",
+    file: "menu-macos-white.conf",
+    renameSkinConf: true,
+  },
+  { suffix: "macos-dark", file: "menu-macos-dark.conf", renameSkinConf: true },
+  { suffix: "teal-blue", file: "menu-teal-blue.conf", renameSkinConf: true },
+  // { suffix: "purple", file: "menu-purple.conf", renameSkinConf: true },
 ];
+
 const COMMON_DIR = path.join(BASE_SRC, "common");
 const OUTPUT_DIR = "dist";
-const ROOT_FILES = ["mpv.conf", "input.conf"]; // 这些文件也在 src 根目录下
+const ROOT_FILES = ["mpv.conf", "input.conf"];
 
 // ---------- 获取版本号 ----------
 function getVersion() {
@@ -49,6 +69,21 @@ function createZip(sourceDir, zipPath) {
   });
 }
 
+// ---------- 清理 script-opts 中的 <skin>-*.conf 变体 ----------
+async function cleanSkinVariantConfs(scriptOptsDir, skin) {
+  if (!(await fs.pathExists(scriptOptsDir))) return;
+
+  const prefix = `${skin}-`;
+  const entries = await fs.readdir(scriptOptsDir);
+
+  for (const name of entries) {
+    if (name.startsWith(prefix) && name.endsWith(".conf")) {
+      await fs.remove(path.join(scriptOptsDir, name));
+      console.log(`   🗑️  移除临时目录中的 ${name}`);
+    }
+  }
+}
+
 // ---------- 主流程 ----------
 async function build() {
   const version = getVersion();
@@ -57,7 +92,6 @@ async function build() {
   await fs.ensureDir(OUTPUT_DIR);
   await fs.emptyDir(OUTPUT_DIR);
 
-  // 检查源目录是否存在
   if (!(await fs.pathExists(BASE_SRC))) {
     console.error(
       `❌ 源目录 "${BASE_SRC}" 不存在！请确保所有源文件已放入 src/ 目录。`
@@ -65,7 +99,6 @@ async function build() {
     process.exit(1);
   }
 
-  // 检查皮肤目录
   for (const skin of SKINS) {
     const skinPath = path.join(BASE_SRC, skin);
     if (!(await fs.pathExists(skinPath))) {
@@ -76,8 +109,8 @@ async function build() {
 
   for (const skin of SKINS) {
     for (const menu of MENU_CONFIGS) {
-      const suffix = menu.suffix;
-      const menuFile = path.join(BASE_SRC, menu.file); // 菜单配置也在 src 下
+      const { suffix, file: menuFileName, renameSkinConf } = menu;
+      const menuFile = path.join(BASE_SRC, menuFileName);
 
       if (!(await fs.pathExists(menuFile))) {
         console.warn(`⚠️  跳过 ${skin}_${suffix}：${menuFile} 不存在`);
@@ -89,7 +122,7 @@ async function build() {
       console.log(`🔄 处理 ${skin}_${suffix} ...`);
 
       try {
-        // 1. 复制皮肤
+        // 1. 复制皮肤（会连带 script-opts/ 下的 <skin>-*.conf 变体一起复制过来）
         await fs.copy(skinSrc, tempDir);
 
         // 2. 合并 common
@@ -97,20 +130,46 @@ async function build() {
           await fs.copy(COMMON_DIR, tempDir, { overwrite: true });
         }
 
-        // 3. 创建 script-opts
+        // 3. 确保 script-opts 目录存在
         const scriptOptsDir = path.join(tempDir, "script-opts");
         await fs.ensureDir(scriptOptsDir);
 
-        // 4. 复制菜单配置
+        // 4. 复制菜单样式
         await fs.copy(menuFile, path.join(scriptOptsDir, "menu_style.conf"), {
           overwrite: true,
         });
 
-        // 5. 复制根目录的 mpv.conf 和 input.conf（现在也在 src 下）
-        for (const file of ROOT_FILES) {
-          const srcFile = path.join(BASE_SRC, file);
+        // 5. 若需要，从 src 源目录把 <skin>-<suffix>.conf 复制为 <skin>.conf
+        //    注意：源文件从 src 读取，避免后续清理时被误删
+        if (renameSkinConf) {
+          const skinConfName = `${skin}-${suffix}.conf`;
+          const srcSkinConf = path.join(
+            BASE_SRC,
+            skin,
+            "script-opts",
+            skinConfName
+          );
+          const destSkinConf = path.join(scriptOptsDir, `${skin}.conf`);
+
+          if (await fs.pathExists(srcSkinConf)) {
+            await fs.copy(srcSkinConf, destSkinConf, { overwrite: true });
+            console.log(`   🔄 ${skinConfName} → ${skin}.conf`);
+          } else {
+            console.warn(
+              `   ⚠️  未找到 ${srcSkinConf}，跳过 ${skin}.conf 重命名`
+            );
+          }
+        }
+
+        // 6. 无条件清理临时目录中所有 <skin>-*.conf 变体文件
+        //    （modernz.conf / uosc.conf 不匹配 <skin>- 前缀，会被保留）
+        await cleanSkinVariantConfs(scriptOptsDir, skin);
+
+        // 7. 复制根目录的 mpv.conf 和 input.conf
+        for (const f of ROOT_FILES) {
+          const srcFile = path.join(BASE_SRC, f);
           if (await fs.pathExists(srcFile)) {
-            await fs.copy(srcFile, path.join(tempDir, file), {
+            await fs.copy(srcFile, path.join(tempDir, f), {
               overwrite: true,
             });
           } else {
@@ -118,19 +177,19 @@ async function build() {
           }
         }
 
-        // 6. 写入 config-version
+        // 8. 写入 config-version
         await fs.writeFile(
           path.join(tempDir, "config-version"),
           version + "\n"
         );
 
-        // 7. 打包
+        // 9. 打包
         const zipName = `${skin}_${suffix}.zip`;
         const zipPath = path.join(OUTPUT_DIR, zipName);
         await createZip(tempDir, zipPath);
         console.log(`✅ 生成 ${zipName}`);
 
-        // 8. 清理
+        // 10. 清理
         await fs.remove(tempDir);
       } catch (err) {
         console.error(`❌ 处理 ${skin}_${suffix} 失败:`, err);

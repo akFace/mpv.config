@@ -1,9 +1,13 @@
 # mpv 和 mpv.net 播放器开箱即用配置文件&精美 UI 主题皮肤&常用插件（支持 Windows、macOS、Linux）
 
-> - mpv 配置文件支持 Windows、macOS、Linux，全平台带有一致的右键菜单功能
-> - The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms.
+> [!TIP]
+>
+> - mpv 配置文件支持 Windows、macOS、Linux，全平台带有一致的右键菜单功能，多种菜单样式可选
+> - The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms, multiple menu styles available
 
-#### 中文 | [English](https://github.com/akFace/mpv.config/blob/master/README_en.md)
+![主页](./preview/main.png)
+
+### 中文 | [English](https://github.com/akFace/mpv.config/blob/master/README_en.md)
 
 ## 简要说明
 
@@ -84,8 +88,7 @@ macOS:   ~/Library/Application Support/mpv/
 - ModernZ 主题自定义文档：[ModernZ](https://github.com/Samillion/ModernZ#customization)
 - 弹幕默认样式在配置文件夹`script-opts/uosc_danmaku.conf`下，要修改请使用文本编辑器打开编辑
 - 弹幕相关配置：[查看文档](https://github.com/Tony15246/uosc_danmaku#%E7%9B%AE%E5%BD%95)
-- **关于弹幕流畅度问题**，目前本人的设备屏幕是 4k60hz，要打开`video-sync=display-resample`才流畅，但有些用户的设备打开此设置开倍速播放会导致声音卡问题，因此现在默认关闭，需要设置的请打开 mpv.conf 文件编辑，删除此行代码最前面的 # 号
-- 跳过片头片尾：在配置文件夹中`mpv.conf`,打开编辑，可看到注释的跳过片头片尾，把注释的#号去掉，填写上自定义的片头片尾时间重启播放器即可
+- **关于弹幕流畅度问题**，目前本人的设备屏幕是 4k60hz，要打开视频同步帧 `display-resample` 才流畅，但有些用户的设备打开此设置开倍速播放会导致声音卡问题，因此现在默认关闭，需要打开的：右键菜单 > 视频 > 帧同步模式 > display-resample 即可
 - 直接播放 B 站、YouTube 视频或其他链接：安装 [yt-dlp](https://github.com/yt-dlp/yt-dlp/releases) ，进入下载 yt-dlp.exe，放到 `mpv.exe` 同目录下，即：播放器安装目录。重启即可直接粘贴视频页面链接，不过更推荐下边的浏览器插件
 - **推荐：** 油猴脚本 👉 [play-with-mpv 使用 mpv 播放网页中的视频](https://github.com/akFace/play-with-mpv)
 
@@ -98,20 +101,22 @@ macOS:   ~/Library/Application Support/mpv/
 
 ### 主题皮肤 1（modernz）
 
-![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-03-16_20-32-59.jpg)
+![image](./preview/Snipaste_2026-03-16_20-32-59.jpg)
 
 ### 主题皮肤 2（uosc）
 
-![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-08-24_03-00-53.jpg)
+![image](./preview/Snipaste_2026-08-24_03-00-53.jpg)
 
 ### 功能强大的右键菜单
 
-default：
-![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-08-15_00-09-37.jpg)
-macos-white：
-![image](https://github.com/akFace/mpv.config/raw/master/preview/Snipaste_2026-08-16_01-04-38.jpg)
-macos-dark：
-![image](https://github.com/akFace/mpv.config/raw/master/preview/Snipaste_2026-08-16_01-10-14.jpg)
+**default：**
+![image](./preview/Snipaste_2026-08-15_00-09-37.jpg)
+**macos-white：**
+![image](./preview/Snipaste_2026-08-16_01-04-38.jpg)
+**macos-dark：**
+![image](./preview/Snipaste_2026-08-16_01-10-14.jpg)
+**teal-blue：**
+![image](./preview/Snipaste_2026-09-26_15-31-59.jpg)
 
 ### 可视化均衡器 eq
 
