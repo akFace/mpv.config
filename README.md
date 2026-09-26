@@ -1,9 +1,13 @@
 # mpv 和 mpv.net 播放器开箱即用配置文件&精美 UI 主题皮肤&常用插件（支持 Windows、macOS、Linux）
 
-> - mpv 配置文件支持 Windows、macOS、Linux，全平台带有一致的右键菜单功能
-> - The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms.
+> [!TIP]
+>
+> - mpv 配置文件支持 Windows、macOS、Linux，全平台带有一致的右键菜单功能，多种菜单样式可选
+> - The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms, multiple menu styles available
 
-#### 中文 | [English](https://github.com/akFace/mpv.config/blob/master/README_en.md)
+![主页](./preview/main.png)
+
+### 中文 | [English](https://github.com/akFace/mpv.config/blob/master/README_en.md)
 
 ## 简要说明
 
@@ -97,20 +101,22 @@ macOS:   ~/Library/Application Support/mpv/
 
 ### 主题皮肤 1（modernz）
 
-![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-03-16_20-32-59.jpg)
+![image](./preview/Snipaste_2026-03-16_20-32-59.jpg)
 
 ### 主题皮肤 2（uosc）
 
-![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-08-24_03-00-53.jpg)
+![image](./preview/Snipaste_2026-08-24_03-00-53.jpg)
 
 ### 功能强大的右键菜单
 
-default：
-![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-08-15_00-09-37.jpg)
-macos-white：
-![image](https://github.com/akFace/mpv.config/raw/master/preview/Snipaste_2026-08-16_01-04-38.jpg)
-macos-dark：
-![image](https://github.com/akFace/mpv.config/raw/master/preview/Snipaste_2026-08-16_01-10-14.jpg)
+**default：**
+![image](./preview/Snipaste_2026-08-15_00-09-37.jpg)
+**macos-white：**
+![image](./preview/Snipaste_2026-08-16_01-04-38.jpg)
+**macos-dark：**
+![image](./preview/Snipaste_2026-08-16_01-10-14.jpg)
+**cyan-blue：**
+![image](./preview/Snipaste_2026-09-26_15-31-59.jpg)
 
 ### 可视化均衡器 eq
 
