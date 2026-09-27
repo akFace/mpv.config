@@ -7,7 +7,7 @@
 
 ![主页](./preview/main.png)
 
-### 中文 | [English](https://github.com/akFace/mpv.config/blob/master/README_en.md)
+### 中文 | [English](https://github.com/akFace/mpv.config/blob/main/README_en.md)
 
 ## 简要说明
 

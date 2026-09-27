@@ -2,7 +2,7 @@
 
 > The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms.
 
-#### [中文](https://github.com/akFace/mpv.config/blob/master/README.md) | English
+#### [中文](https://github.com/akFace/mpv.config/blob/main/README.md) | English
 
 - Note: This document was translated by `AI-translated` and may contain some inaccuracies.
 
@@ -48,7 +48,7 @@ Each theme archive contains a complete, fully functional configuration. Simply d
 - After extracting/installing the player, create a new folder named `portable_config` in the player's root directory (the same directory as `mpv.exe`). This will be used as the `configuration folder`.
 - **Copy all extracted files into the `configuration folder` (only one theme configuration can be used at a time), then restart the player.**
 
-- **Language:** The language setting for the ModernZ theme is located in `script-opts/modernz.conf`, while the language setting for the UOSC theme is located in `script-opts/uosc.conf`. To change the language, search for the keyword `language` in the corresponding file. Download [`input-en.conf`](https://github.com/akFace/mpv.config/blob/master/src/input-en.conf), rename it to `input.conf`, and replace the original `input.conf` file with it, then restart the player.
+- **Language:** The language setting for the ModernZ theme is located in `script-opts/modernz.conf`, while the language setting for the UOSC theme is located in `script-opts/uosc.conf`. To change the language, search for the keyword `language` in the corresponding file. Download [`input-en.conf`](https://github.com/akFace/mpv.config/blob/main/src/input-en.conf), rename it to `input.conf`, and replace the original `input.conf` file with it, then restart the player.
 
 - **Note the directory structure**
 
@@ -93,8 +93,8 @@ Windows: C:/Users/%username%/AppData/Roaming/mpv/
 
 ## Preview
 
-![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-09-02_22-25-41.jpg)
-![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-09-02_22-31-00.jpg)
+![image](https://raw.githubusercontent.com/akFace/mpv.net.config/main/preview/Snipaste_2026-09-02_22-25-41.jpg)
+![image](https://raw.githubusercontent.com/akFace/mpv.net.config/main/preview/Snipaste_2026-09-02_22-31-00.jpg)
 
 ## Open-source project
 
