@@ -17,13 +17,13 @@ local o = {
     bold = false,
     italic = false,
     background = '#303030',
-    border = '#6F6F6F',
+    border = '#5A5A5F',
     text = '#F2F2F2',
     disabled_text = '#8A8A8A',
     hover = '#4E4E4E',
-    hover_bg = '',
-    hover_text = '',
-    hover_corner_radius = 7,
+    hover_bg = '#505050',
+    hover_text = '#FFFFFF',
+    hover_corner_radius = 0,
     hover_margin_x = 1,
     hover_margin_y = 0,
     shortcut = '#D0D0D0',
@@ -55,7 +55,7 @@ local o = {
     arrow_char = '›',
     submenu_gap = 4,
     screen_margin = 6,
-    min_width = 360,
+    min_width = 220,
     max_width = 640,
     max_visible_rows = 0,
     scroll_threshold = 0.80,
@@ -546,26 +546,48 @@ local function measure(list, ow, oh, level)
     local min_w = o.min_width * scale
     local max_w = o.max_width * scale
     local max_screen_w = math.max(min_w, ow - 2*(o.screen_margin*scale))
-    local maxw = min_w
+    local sr_gap = math.max(0, tonumber(o.shortcut_right_gap) or 0) * scale
+
+    -- 1) 内容净宽度
+    local content_w = min_w
     for _,it in ipairs(list or {}) do
         if not is_hidden(it) and it.type ~= 'separator' then
             local title, shortcut = split_title(it.title)
             local w = text_width(title, scale) + px*2 + child_indent
             if state_has(it,'checked') then w = w + 20*scale end
-            if shortcut ~= '' then w = w + gap + text_width(shortcut, scale) end
+            if shortcut ~= '' then
+                w = w + gap + text_width(shortcut, scale) + sr_gap
+            end
             if it.type == 'submenu' then w = w + arrow end
-            maxw = math.max(maxw, w)
+            content_w = math.max(content_w, w)
         end
     end
-    maxw = clamp(maxw, min_w, math.min(max_w, max_screen_w))
 
+    -- 2) 先算 layout / 高度，用来判断是否会滚动
     local layout, desired_h, row_h, top_pad, bottom_pad, header_h = build_layout(list, scale, level)
     local playlist_header = get_playlist_header(list, level)
     if playlist_header then
-        maxw = math.max(maxw, text_width(playlist_header, scale) + px * 2)
+        content_w = math.max(content_w, text_width(playlist_header, scale) + px * 2)
     end
     local max_h = panel_max_height(oh, scale)
     local scrollable = desired_h > max_h + 0.01
+
+    -- 3) 滚动条预留 + 浮点/字形度量 slack
+    --
+    -- 滚动条：draw_menu() 从 right_edge 里减去了 scrollbar_width +
+    -- scrollbar_gap，measure() 必须加上，否则内容区比测量值窄，
+    -- 最长的项会被 truncate_text 截成 "...".
+    --
+    -- slack：measure() 加出来的宽度和 draw_menu() 减回去的宽度在
+    -- 浮点数下不完全互逆，最长的项经常刚好顶到面板宽度，1 px 的
+    -- 缓冲足以吸收这点误差，避免正常文本被误截断。
+    if scrollable then
+        content_w = content_w + (o.scrollbar_width + o.scrollbar_gap) * scale
+    end
+    content_w = content_w + 1 * scale
+
+    local maxw = clamp(content_w, min_w, math.min(max_w, max_screen_w))
+
     local h = scrollable and max_h or desired_h
     local max_scroll = math.max(0, desired_h - h)
     local scroll_offset = clamp(tonumber(scroll_offsets[level]) or 0, 0, max_scroll)
