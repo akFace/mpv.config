@@ -44,17 +44,14 @@
 - `modernz`
 - `uosc`
 
-每个主题皮肤压缩包均包含完整功能的配置，下载后解压即可。
+每个主题皮肤压缩包均包含完整功能的配置，下载后解压。
 
 ### 3. 配置播放器
 
-- **以下案例以 Windows 系统为例： ① 和 ② 根据自己选择的播放器按对应教程来即可**
-- **①. mpv 原生播放器**：解压/安装播放器后，在播放器根目录(`mpv.exe` 同目录)下新建名为 `portable_config` 文件夹，作为`配置文件夹`
-- **②. mpv.net 播放器**：如图所示，右键>配置>打开配置文件夹或者`Ctrl + f`快捷键打开`配置文件夹`
+**以下案例以 Windows 系统为例：**
 
-  ![image](https://raw.githubusercontent.com/akFace/mpv.net.config/master/preview/Snipaste_2026-03-16_20-34-06.jpg)
-
-- **将解压出的全部文件复制到`配置文件夹`(只能共存一个主题配置)，重启播放器即可**
+- 解压/安装播放器后，在播放器根目录(`mpv.exe` 同目录)下新建名为 `portable_config` 文件夹，作为 **_配置文件夹_**
+- 将解压出的全部文件复制到 **_配置文件夹_** (只能共存一个主题配置)，重启播放器即可
 
 - **注意目录结构**
 
@@ -68,17 +65,17 @@
       └── input.conf
 ```
 
-一般 mpv 安装版`setup-install`（非 `Portable` 便携版）全局配置文件目录：
+macOS、Linux 、Windows 全局配置文件夹路径：
 
 ```
+macOS:   ~/Library/Application Support/mpv/
 Linux:   ~/.config/mpv/
 Windows: C:/Users/%username%/AppData/Roaming/mpv/
-macOS:   ~/Library/Application Support/mpv/
 ```
 
-> ⚠️ **提示**：若你使用的是 mpv.net 播放器，出现偶尔无法加载缩略图的情况，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpv`改为`mpv_path=mpvnet`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
+> ⚠️ **提示**：**mpv.net 播放器** 可直接右键>配置>打开配置文件夹或者`Ctrl + f`快捷键打开 **_配置文件夹_** 。若你使用的是 mpv.net 播放器，出现偶尔无法加载缩略图的情况，请修改`script-opts/thumbfast.conf`目录中的`mpv_path=mpv`改为`mpv_path=mpvnet`或者播放器安装目录可执行文件 例如：`mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
 >
-> - 其他平台相关： [uosc_danmaku-issues](https://github.com/Tony15246/uosc_danmaku/issues/194)，[右键菜单故障排查文档](https://github.com/akFace/mpv-menu-plugin-next/blob/main/doc/README.md#linux)
+> - macOS、Linux 用户操作方式一致，将解压出的全部配置文件放置到 **_配置文件夹_** 重启播放器即可
 
 ### **[👉 查看常用快捷键&默认行为](https://github.com/akFace/mpv.config/wiki/%E5%BF%AB%E6%8D%B7%E9%94%AE)**
 

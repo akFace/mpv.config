@@ -24,13 +24,29 @@
 
 ## Installation
 
-- First, install a player: **Windows:** [Official builds - Recommended](https://github.com/mpv-player/mpv/releases), [Daily builds - Recommended](https://github.com/zhongfly/mpv-winbuild/releases), [shinchiro builds](https://github.com/shinchiro/mpv-winbuild-cmake/releases), or [mpv.net builds](https://github.com/mpvnet-player/mpv.net/releases). **macOS, Linux:** [Download mpv from the official website](https://mpv.io/installation/)
-- [🎯 Click here to download](https://github.com/akFace/mpv.config/releases) the theme you want (`modernz` or `uosc`). Each archive already contains a complete functional configuration. Extract it after downloading.
-- **The following example uses Windows: ① and ② correspond to the player you choose; follow the relevant instructions.**
-- **①. Official mpv player**: After extracting/installing the player, create a folder named `portable_config` in the player root directory (the same directory as `mpv.exe`) and use it as the `configuration folder`.
-- **②. mpv.net player**: right-click > Configuration > Open Configuration Folder, or press `Ctrl + f` to open the `configuration folder`.
+### 1. Install the Player
 
-- **Copy all extracted files into the `configuration folder` (only one theme configuration can be used at a time)**
+- **Windows:**
+  - [Official Builds (Recommended)](https://github.com/mpv-player/mpv/releases)
+  - [Daily Builds (Recommended)](https://github.com/zhongfly/mpv-winbuild/releases)
+  - [shinchiro Builds](https://github.com/shinchiro/mpv-winbuild-cmake/releases)
+  - [mpv.net Builds](https://github.com/mpvnet-player/mpv.net/releases)
+- **macOS, Linux:** [Download from the official mpv website](https://mpv.io/installation/)
+
+### 2. Download the Theme Configuration
+
+[🎯 Click to Download](https://github.com/akFace/mpv.config/releases) the theme you need. The following themes are currently available:
+
+- `modernz`
+- `uosc`
+
+Each theme archive contains a complete, fully functional configuration. Simply download and extract it.
+
+### 3. Configure the Player
+
+- **The following example uses Windows:**
+- After extracting/installing the player, create a new folder named `portable_config` in the player's root directory (the same directory as `mpv.exe`). This will be used as the `configuration folder`.
+- **Copy all extracted files into the `configuration folder` (only one theme configuration can be used at a time), then restart the player.**
 
 - **Language:** The language setting for the ModernZ theme is located in `script-opts/modernz.conf`, while the language setting for the UOSC theme is located in `script-opts/uosc.conf`. To change the language, search for the keyword `language` in the corresponding file. Download [`input-en.conf`](https://github.com/akFace/mpv.config/blob/master/src/input-en.conf), rename it to `input.conf`, and replace the original `input.conf` file with it, then restart the player.
 
@@ -46,19 +62,19 @@ A typical directory structure looks like this:
       └── input.conf
 ```
 
-For standard mpv installations using `setup-install` (not the `Portable` version), the global configuration directories are:
+macOS、Linux 、Windows， The global configuration directories are:
 
 ```
+macOS:   ~/Library/Application Support/mpv/
 Linux:   ~/.config/mpv/
 Windows: C:/Users/%username%/AppData/Roaming/mpv/
-macOS:   ~/Library/Application Support/mpv/
 ```
 
 > ⚠️ **Tip**: If you are using the mpv.net player and thumbnails occasionally fail to load, change `mpv_path=mpv` in `script-opts/thumbfast.conf` to `mpv_path=mpvnet`, or specify the executable in the player installation directory, for example: `mpv_path=C:\Program Files\mpv.net\mpvnet.exe`
 >
-> - On other platforms, the [uosc_danmaku](https://github.com/Tony15246/uosc_danmaku/issues/194) plugin may sometimes prevent the player from opening. See the [context menu troubleshooting guide](https://github.com/akFace/mpv-menu-plugin-next/blob/main/doc/README.md#linux) and check for a solution.
+> - The procedure is the same for macOS and Linux users: simply place the extracted files into the **_`configuration folder`_** and restart the player.
 
-### **[👉 View common keyboard shortcuts! It is recommended to remember the most useful ones](https://github.com/akFace/mpv.config/wiki/%E5%BF%AB%E6%8D%B7%E9%94%AE)**
+### **[👉 View common keyboard shortcuts! ](https://github.com/akFace/mpv.config/wiki/%E5%BF%AB%E6%8D%B7%E9%94%AE)**
 
 ### Common Settings & Documentation (Optional)
 
