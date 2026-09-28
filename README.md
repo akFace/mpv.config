@@ -105,18 +105,42 @@ Windows: C:/Users/%username%/AppData/Roaming/mpv/
 
 ![image](./preview/Snipaste_2026-08-24_03-00-53.jpg)
 
+---
+
 ### 功能强大的右键菜单
 
-**default：**
+> [!NOTE]
+>
+> **多种菜单样式可选**
+
+<details>
+<summary>🎁 <strong>点击展开预览 </strong></summary>
+
+#### default
+
 ![image](./preview/Snipaste_2026-08-15_00-09-37.jpg)
-**macos-white：**
+
+#### macos-white
+
 ![image](./preview/Snipaste_2026-08-16_01-04-38.jpg)
-**macos-dark：**
+
+#### macos-dark
+
 ![image](./preview/Snipaste_2026-08-16_01-10-14.jpg)
-**teal-blue：**
+
+#### teal-blue
+
 ![image](./preview/Snipaste_2026-09-26_15-31-59.jpg)
 
-### 可视化均衡器 eq
+#### purple-dark
+
+![image](./preview/Snipaste_2026-09-29_00-13-54.jpg)
+
+</details>
+
+---
+
+### 支持可视化均衡器 eq
 
 ![alt text](https://github.com/akFace/equalizer-gui/raw/main/images/Snipaste_2026-08-13_18-08-43.jpg)
 

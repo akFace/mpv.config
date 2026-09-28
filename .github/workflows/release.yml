@@ -66,7 +66,7 @@ jobs:
           ### 两套主题皮肤：\`modernz\` 和 \`uosc\` 多种菜单风格
 
           - 请选择喜欢的某一套下载，每一个压缩包都已包含所有配置文件，解压放到配置文件夹下，重启播放器即可
-          - \`modernz_xxx.zip\`和\`uosc_xxx.zip\` 后缀为不同风格的右键菜单，功能一样。 🎯 [右键菜单预览](https://github.com/akFace/mpv.config#%E5%8A%9F%E8%83%BD%E5%BC%BA%E5%A4%A7%E7%9A%84%E5%8F%B3%E9%94%AE%E8%8F%9C%E5%8D%95)
+          - \`modernz_xxx.zip\`和\`uosc_xxx.zip\` 后缀为不同风格的右键菜单，功能一样，全平台通用。 🎯 [右键菜单效果预览](https://github.com/akFace/mpv.config#%E5%8A%9F%E8%83%BD%E5%BC%BA%E5%A4%A7%E7%9A%84%E5%8F%B3%E9%94%AE%E8%8F%9C%E5%8D%95)
           - 🛠 [详细使用教程](https://github.com/akFace/mpv.config#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95) | 🍭 [超分滤镜说明指南](https://github.com/akFace/mpv.config/wiki/%E8%A7%86%E9%A2%91%E6%BB%A4%E9%95%9C%E9%80%89%E6%8B%A9%E6%8C%87%E5%8D%97) | ⌨ [常用快捷键](https://github.com/akFace/mpv.config/wiki/%E5%BF%AB%E6%8D%B7%E9%94%AE) | 📢 [Wiki 文档](https://github.com/akFace/mpv.config/wiki)
           - 如何自定义配置 mpv.conf 与快捷键/菜单 input.conf，在更新版本时直接覆盖不受影响？ 📢 [查看教程](https://github.com/akFace/mpv.config/wiki/%E8%87%AA%E5%AE%9A%E4%B9%89-mpv.conf-%E4%B8%8E%E5%BF%AB%E6%8D%B7%E9%94%AE-%E8%8F%9C%E5%8D%95-input.conf)
           ---
