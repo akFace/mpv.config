@@ -2,8 +2,8 @@
 
 > [!TIP]
 >
-> - mpv 配置文件支持 Windows、macOS、Linux，全平台带有一致的右键菜单功能，**多种菜单样式可选**
 > - The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms, **multiple menu styles available**
+> - mpv 配置文件支持 Windows、macOS、Linux，全平台带有一致的右键菜单功能，**多种菜单样式可选**
 
 ![主页](./preview/main.png)
 
@@ -109,12 +109,13 @@ Windows: C:/Users/%username%/AppData/Roaming/mpv/
 
 ### 功能强大的右键菜单
 
-> [!NOTE]
+> [!IMPORTANT]
 >
+> **Multiple menu styles available**  
 > **多种菜单样式可选**
 
 <details>
-<summary>🎁 <strong>点击展开预览 </strong></summary>
+<summary>🎁 <strong>点击展开预览 PREVIEW</strong></summary>
 
 #### default
 
