@@ -119,7 +119,7 @@ Windows: C:/Users/%username%/AppData/Roaming/mpv/
 <details>
 <summary>🎁 <strong>点击展开预览 PREVIEW</strong></summary>
 
-#### default
+<h4 id="default">default</h4>
 
 ![image](./preview/Snipaste_2026-08-15_00-09-37.jpg)
 
