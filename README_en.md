@@ -36,7 +36,7 @@
 
 ### 2. Download the Theme Configuration
 
-[🎯 Click to Download](https://github.com/akFace/mpv.config/releases) the theme you need. The following themes are currently available:
+[🎯 Click to Download](https://github.com/akFace/mpv.config/releases) the theme you need. The following themes are currently available: `xxx_en.zip` version
 
 - `modernz`
 - `uosc`

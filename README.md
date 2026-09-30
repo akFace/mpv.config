@@ -116,8 +116,8 @@ Windows: C:/Users/%username%/AppData/Roaming/mpv/
 > **多种菜单样式可选**  
 > 切换主题配色方法：播放器内右键 > 工具 > 主题 选择对应的名称即可
 
-<details>
-<summary>🎁 <strong>点击展开预览 PREVIEW</strong></summary>
+<details open>
+<summary>🎁 <strong>点击展开/收起  Open/Close</strong></summary>
 
 #### default
 
