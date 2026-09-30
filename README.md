@@ -21,6 +21,7 @@
 - 视频滤镜/Anime4K/FSRCNNX/CuNNy/ArtCNN 等，可右键菜单按需加载
 - 支持 360°VR 全景视频
 - 可视化调节 eq 均衡器、声道切换、自动 HDR、解码切换、调色等常用功能
+- 实时切换主题配色
 - Windows、macOS、Linux 全平台一致的强大右键菜单功能
 - 轻量级，超简单，只需简单几步骤即可完成享用
 - [>>查看主题预览效果截图](https://github.com/akFace/mpv.config#%E9%A2%84%E8%A7%88%E6%95%88%E6%9E%9C%E5%9B%BE)
@@ -112,7 +113,8 @@ Windows: C:/Users/%username%/AppData/Roaming/mpv/
 > [!IMPORTANT]
 >
 > **Multiple menu styles available**  
-> **多种菜单样式可选**
+> **多种菜单样式可选**  
+> 切换主题配色方法：播放器内右键 > 工具 > 主题 选择对应的名称即可
 
 <details>
 <summary>🎁 <strong>点击展开预览 PREVIEW</strong></summary>
@@ -151,6 +153,9 @@ Windows: C:/Users/%username%/AppData/Roaming/mpv/
 
 - [equalizer-gui](https://github.com/akFace/equalizer-gui)
 - [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
+- [switch-opts](./src/common/scripts/switch-opts.lua)
+- [interp_switch](./src/common/scripts/interp_switch.lua)
+- [merge-input](./src/common/scripts/merge-input.lua)
 - [play-with-mpv](https://github.com/akFace/play-with-mpv)
 - [scheme-handler-cross](https://github.com/akFace/scheme-handler-cross)
 
