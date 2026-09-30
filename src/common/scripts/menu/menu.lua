@@ -10,7 +10,10 @@ local msg = require('mp.msg')
 local opts = require('mp.options')
 local utils = require('mp.utils')
 
-local o = {
+------------------------------------------------------------
+-- 默认配置（每次 reload 都从这份默认值重新开始）
+------------------------------------------------------------
+local o_defaults = {
     font = '',
     font_name = '',
     font_size = 18,
@@ -83,26 +86,44 @@ local o = {
     max_ui_scale = 2.5,
     macos_font_scale = 1.0,
 }
--- opts.read_options(o)
-opts.read_options(o, 'menu_style')
--- Style aliases for macOS-like menu_style.conf files.
-if o.font_name ~= '' then o.font = o.font_name end
-if o.hover_bg ~= '' then o.hover = o.hover_bg end
-if o.hover_text == '' then o.hover_text = o.text end
-if o.arrow ~= '' then o.submenu_arrow = o.arrow end
-if o.hover_arrow == '' then o.hover_arrow = o.submenu_arrow end
-if o.hover_shortcut == '' then o.hover_shortcut = o.shortcut end
+
+-- 对外共享的配置表：始终保持同一个 table 引用，
+-- reload 时只替换内容，所有闭包捕获的 o 都会看到新值。
+local o = {}
 
 local platform = mp.get_property('platform') or ''
-if o.font == '' then
-    if platform == 'windows' then
-        o.font = 'Microsoft YaHei UI'
-    elseif platform == 'darwin' then
-        o.font = 'PingFang SC'
-    else
-        o.font = 'Noto Sans CJK SC'
+
+-- 重新加载 menu_style.conf
+local function load_options()
+    -- 先恢复默认值
+    for k in pairs(o) do o[k] = nil end
+    for k, v in pairs(o_defaults) do o[k] = v end
+
+    -- 读取用户配置
+    opts.read_options(o, 'menu_style')
+
+    -- 兼容 macOS 风格别名
+    if o.font_name ~= '' then o.font = o.font_name end
+    if o.hover_bg ~= '' then o.hover = o.hover_bg end
+    if o.hover_text == '' then o.hover_text = o.text end
+    if o.arrow ~= '' then o.submenu_arrow = o.arrow end
+    if o.hover_arrow == '' then o.hover_arrow = o.submenu_arrow end
+    if o.hover_shortcut == '' then o.hover_shortcut = o.shortcut end
+
+    -- 平台字体兜底
+    if o.font == '' then
+        if platform == 'windows' then
+            o.font = 'Microsoft YaHei UI'
+        elseif platform == 'darwin' then
+            o.font = 'PingFang SC'
+        else
+            o.font = 'Noto Sans CJK SC'
+        end
     end
 end
+
+-- 首次加载
+load_options()
 
 local REF_W, REF_H = 1280, 720
 local current_ow, current_oh = 0, 0
@@ -2149,3 +2170,47 @@ mp.register_event('shutdown',hide)
 mp.add_periodic_timer(0.08,function() if visible then on_mouse_move() end end)
 
 msg.info('cross-platform menu backend v43 loaded as '..BACKEND_NAME)
+
+------------------------------------------------------------
+-- 暴露给外部的 reload 接口
+--
+-- 行为：
+--   1) 重新读取 menu_style.conf
+--   2) 如果菜单当前可见，用新样式重绘
+--
+-- 供第三方lua或者快捷键调用：
+--   script-message-to menu reload-menu
+------------------------------------------------------------
+
+local function reload_menu()
+    msg.info('menu: reload_menu() called')
+
+    -- 重新跑 opts.read_options(o, 'menu_style')
+    load_options()
+
+    -- 屏幕尺寸缓存可以保留；但如果你改了屏幕或热插拔显示器，
+    -- 想强制重新探测，取消下面这行的注释：
+    -- screen_size_cache = nil
+
+    -- 如果菜单当前可见，立即用新样式重绘
+    if visible then
+        local ok, err = pcall(render)
+        if not ok then
+            msg.error('menu: reload render failed: ' .. tostring(err))
+        end
+    end
+
+    -- 可选：通知其它脚本（uosc/ModernZ 等）菜单已重载
+    pcall(mp.commandv, 'script-message', 'menu-reloaded', BACKEND_NAME)
+
+    return true
+end
+
+mp.register_script_message('reload-menu', function()
+    reload_menu()
+end)
+
+-- 可选：短名字，方便 input.conf 里绑键
+mp.register_script_message('reload', function()
+    reload_menu()
+end)

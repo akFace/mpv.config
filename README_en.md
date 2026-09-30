@@ -19,6 +19,7 @@
 - Supports frame interpolation mode for smoother playback
 - Supports 360° VR panoramic videos
 - Visual equalizer controls, Audio channel switch, Automatic HDR, Decoding switching, and Color grading...
+- Switch theme color schemes in real-time
 - Powerful and consistent context menu functionality across Windows, macOS, and Linux
 - Lightweight and extremely simple, with just two steps to get started
 
@@ -47,8 +48,6 @@ Each theme archive contains a complete, fully functional configuration. Simply d
 - **The following example uses Windows:**
 - After extracting/installing the player, create a new folder named `portable_config` in the player's root directory (the same directory as `mpv.exe`). This will be used as the `configuration folder`.
 - **Copy all extracted files into the `configuration folder` (only one theme configuration can be used at a time), then restart the player.**
-
-- **Language:** The language setting for the ModernZ theme is located in `script-opts/modernz.conf`, while the language setting for the UOSC theme is located in `script-opts/uosc.conf`. To change the language, search for the keyword `language` in the corresponding file. Download [`input-en.conf`](https://github.com/akFace/mpv.config/blob/main/src/input-en.conf), rename it to `input.conf`, and replace the original `input.conf` file with it, then restart the player.
 
 - **Note the directory structure**
 
@@ -82,7 +81,6 @@ Windows: C:/Users/%username%/AppData/Roaming/mpv/
 - ModernZ Theme Options：[ModernZ](https://github.com/Samillion/ModernZ#customization)
 - The default danmaku style is configured in `script-opts/uosc_danmaku.conf`. To modify it, open the file with a text editor.
 - Danmaku-related configuration: [View the documentation](https://github.com/Tony15246/uosc_danmaku#%E7%9B%AE%E5%BD%95)
-- Skip intros and outros: Open `mpv.conf` in the configuration folder. You will find commented-out settings for skipping intros and outros. Remove the `#` symbols and enter your custom intro/outro times, then restart the player.
 - **Recommended:** Tampermonkey script 👉 [play-with-mpv - Play videos from web pages with mpv](https://github.com/akFace/play-with-mpv)
 
 ## How to Update to the Latest Version
@@ -102,6 +100,9 @@ See also:
 
 - [equalizer-gui](https://github.com/akFace/equalizer-gui)
 - [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
+- [switch-opts](./src/common/scripts/switch-opts.lua)
+- [interp_switch](./src/common/scripts/interp_switch.lua)
+- [merge-input](./src/common/scripts/merge-input.lua)
 - [play-with-mpv](https://github.com/akFace/play-with-mpv)
 - [scheme-handler-cross](https://github.com/akFace/scheme-handler-cross)
 
