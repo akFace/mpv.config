@@ -123,5 +123,6 @@ Thanks to the following open-source projects for making this possible:
 - [mpv360](https://github.com/kasper93/mpv360)
 - [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu)
 - [awesome-mpv](https://github.com/stax76/awesome-mpv)
+- [dyphire/mpv-config](https://github.com/dyphire/mpv-config)
 - [mpv_PlayKit](https://github.com/hooke007/mpv_PlayKit)
 - [mpv guide](https://hooke007.github.io/official_man/index.html)

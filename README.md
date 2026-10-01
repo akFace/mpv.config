@@ -176,5 +176,6 @@ Windows: C:/Users/%username%/AppData/Roaming/mpv/
 - [mpv360](https://github.com/kasper93/mpv360)
 - [recent-menu](https://github.com/natural-harmonia-gropius/recent-menu)
 - [awesome-mpv](https://github.com/stax76/awesome-mpv)
+- [dyphire/mpv-config](https://github.com/dyphire/mpv-config)
 - [mpv_PlayKit](https://github.com/hooke007/mpv_PlayKit)
 - [mpv 中文配置手册](https://hooke007.github.io/official_man/index.html)
