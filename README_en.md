@@ -9,7 +9,7 @@
 
 > The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms.
 
-#### [中文](https://github.com/akFace/mpv.config/blob/main/README.md) | English
+#### 🌏 [中文](https://github.com/akFace/mpv.config/blob/main/README.md) | English
 
 - Note: This document was translated by `AI-translated` and may contain some inaccuracies.
 

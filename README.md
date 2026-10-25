@@ -14,7 +14,7 @@
   <a href="https://github.com/akFace/mpv.config/releases"><img alt="Releases" src="https://flat.badgen.net/github/release/akFace/mpv.config"></a>
 </p>
 
-### 中文 | [English](https://github.com/akFace/mpv.config/blob/main/README_en.md)
+### 🌏 中文 | [English](https://github.com/akFace/mpv.config/blob/main/README_en.md)
 
 ## 使用教程
 
@@ -78,7 +78,7 @@
 See also:
 
 - [equalizer-gui](https://github.com/akFace/equalizer-gui)
-- [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
+- [mpv-menu-plugin-next](https://github.com/mpvConfig/mpv-menu-plugin-next)
 - [switch-opts](./src/common/scripts/switch-opts.lua)
 - [interp_switch](./src/common/scripts/interp_switch.lua)
 - [skip-intro](./src/common/scripts/skip-intro.lua)

@@ -69,6 +69,102 @@ local function ensure_marks(key)
 end
 
 ------------------------------------------------------------
+-- Chapter-based auto detection
+------------------------------------------------------------
+
+-- 片头关键词（小写匹配）
+local INTRO_KEYWORDS = { 'open', 'opening', 'intro', 'op', '片头', 'オープニング' }
+-- 片尾关键词（小写匹配）
+local OUTRO_KEYWORDS = { 'end', 'ending', 'outro', 'ed', '片尾', 'エンディング' }
+
+-- 标题匹配：短关键词（<=2 字符）要求词边界，避免 "ed" 命中 "bed"/"video"
+local function title_matches(title, keywords)
+    if not title then return false end
+    local t = title:lower()
+    for _, kw in ipairs(keywords) do
+        if #kw <= 2 then
+            if t == kw
+                or t:match('^' .. kw .. '%f[%W]')
+                or t:match('%f[%W]' .. kw .. '$')
+                or t:match('%f[%W]' .. kw .. '%f[%W]')
+            then
+                return true
+            end
+        else
+            if t:find(kw, 1, true) then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- 返回 { start = 片头结束时间, end = 片尾开始时间 }（可能为 nil）
+local function detect_marks_from_chapters()
+    local chapters = mp.get_property_native('chapter-list')
+    if not chapters or #chapters == 0 then
+        return nil
+    end
+
+    local result = {}
+
+    -- 片头章节：标题匹配 intro 关键词，取其下一章节的起始时间作为片头结束点
+    for i, ch in ipairs(chapters) do
+        if title_matches(ch.title, INTRO_KEYWORDS) then
+            local next_ch = chapters[i + 1]
+            if next_ch then
+                result.start = next_ch.time
+            end
+            break
+        end
+    end
+
+    -- 片尾章节：标题匹配 outro 关键词，取该章节自身的起始时间
+    for _, ch in ipairs(chapters) do
+        if title_matches(ch.title, OUTRO_KEYWORDS) then
+            result["end"] = ch.time
+            break
+        end
+    end
+
+    if result.start or result["end"] then
+        msg.info(string.format(
+            'skip-intro: detected from chapters start=%s end=%s',
+            tostring(result.start), tostring(result["end"])))
+        return result
+    end
+    return nil
+end
+
+-- 取当前 key 生效的标记：优先用户设置，其次章节检测
+local function effective_marks(key)
+    if not key then return nil end
+    local user = marks[key]
+    local has_user_start = user and type(user.start) == 'number'
+    local has_user_end   = user and type(user["end"]) == 'number'
+
+    -- 两个都设置了就不必检测
+    if has_user_start and has_user_end then
+        return user
+    end
+
+    local detected = detect_marks_from_chapters()
+    if not detected then
+        return user
+    end
+
+    local merged = {
+        start = has_user_start and user.start or detected.start,
+        ["end"] = has_user_end and user["end"] or detected["end"],
+    }
+    -- 保留原有的运行态字段
+    if user and user._end_triggered ~= nil then
+        merged._end_triggered = user._end_triggered
+    end
+    return merged
+end
+
+------------------------------------------------------------
 -- Sync state to mpv properties (so #@state= can read them)
 ------------------------------------------------------------
 
@@ -185,7 +281,6 @@ local function load_marks()
 end
 
 local function save_marks()
-    -- 打印当前 marks 内容，方便确认
     local mark_count = 0
     for k, v in pairs(marks) do
         mark_count = mark_count + 1
@@ -196,7 +291,6 @@ local function save_marks()
     msg.info(string.format('skip-intro: save_marks: %d key(s), auto_start=%s, auto_end=%s',
         mark_count, tostring(auto_skip_start), tostring(auto_skip_end)))
 
-    -- 手写 JSON
     local marks_json = build_marks_json()
     local auto_start_json = auto_skip_start and 'true' or 'false'
     local auto_end_json = auto_skip_end and 'true' or 'false'
@@ -282,12 +376,15 @@ mp.register_script_message('goto-mark', function(name)
 end)
 
 mp.register_script_message('show-marks', function()
-    local m = current_key and marks[current_key]
+    local m = effective_marks(current_key)
+    local user = current_key and marks[current_key]
+    local src = (user and (type(user.start) == 'number' or type(user["end"]) == 'number'))
+                 and 'user' or 'chapter'
     local s = m and m.start and fmt(m.start) or 'unset'
     local e = m and m["end"] and fmt(m["end"]) or 'unset'
     local key_display = current_key or 'none'
-    mp.osd_message('key=' .. key_display .. '\nstart=' .. s .. '  end=' .. e, 3)
-    msg.info('skip-intro: show-marks key=' .. key_display .. ' start=' .. s .. ' end=' .. e)
+    mp.osd_message('key=' .. key_display .. ' (' .. src .. ')\nstart=' .. s .. '  end=' .. e, 3)
+    msg.info('skip-intro: show-marks key=' .. key_display .. ' src=' .. src .. ' start=' .. s .. ' end=' .. e)
 end)
 
 mp.register_script_message('toggle-auto-start', function()
@@ -315,7 +412,14 @@ local function on_file_loaded()
 
     if not current_key then return end
 
-    local m = marks[current_key]
+    -- 运行态字段始终挂在 marks[current_key] 上（如果用户没设过则临时建一个）
+    if not marks[current_key] then
+        marks[current_key] = {}
+    end
+    marks[current_key]._end_triggered = false
+
+    local m = effective_marks(current_key)
+
     if auto_skip_start and m and m.start and m.start > 0 then
         mp.add_timeout(0.1, function()
             if key_for(mp.get_property('path')) ~= current_key then return end
@@ -343,10 +447,6 @@ local function on_file_loaded()
             mp.osd_message(string.format('Skipped intro %.1f s', m.start), 1)
         end)
     end
-
-    if m then
-        m._end_triggered = false
-    end
 end
 
 local function on_time_pos_change(_, t)
@@ -354,12 +454,14 @@ local function on_time_pos_change(_, t)
     if not t then return end
     if not current_key then return end
 
-    local m = marks[current_key]
+    local m = effective_marks(current_key)
     if not m or not m["end"] then return end
-    if m._end_triggered then return end
+
+    local state = marks[current_key]
+    if state and state._end_triggered then return end
 
     if t >= m["end"] - 0.3 then
-        m._end_triggered = true
+        if state then state._end_triggered = true end
         mp.osd_message('Skipped outro', 1)
         mp.commandv('playlist-next')
     end

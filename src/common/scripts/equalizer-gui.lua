@@ -141,8 +141,31 @@ end
 
 -- 应用音频 EQ + 声道模式到 mpv 引擎
 local function apply_audio_eq()
-    -- Auto：由 mpv 自动决定；
-    -- Stereo / Left / Right：最终输出为立体声。
+    -- mpv 的这些属性可能在文件切换/解码器初始化期间暂时不可用。
+    local codec = (mp.get_property("audio-codec-name") or ""):lower()
+    -- mp.get_property() 返回字符串；某些 mpv 版本/属性可能返回带单位或非纯数字文本。
+    -- tonumber() 只传一个参数，并先校验采样率，避免把字符串误当作进制参数。
+    local sample_rate_text = mp.get_property("audio-params/samplerate")
+    local sample_rate = tonumber(sample_rate_text)
+    if not sample_rate and sample_rate_text then
+        sample_rate = tonumber(tostring(sample_rate_text):match("(%d+)"))
+    end
+    local replaygain = (mp.get_property("replaygain") or "no"):lower()
+
+    -- DSD 不经过 lavfi EQ，避免将原生 DSD 强制转换为 PCM。
+    -- 仍保留用户明确选择的 Left / Right 声道模式。
+    local is_dsd = codec:find("dsd", 1, true) ~= nil
+    if is_dsd then
+        local channel_filter = get_channel_filter()
+        if channel_filter then
+            mp.commandv("af", "set", "@eq_gui:lavfi=[" .. channel_filter .. "]")
+        else
+            mp.commandv("af", "remove", "@eq_gui")
+        end
+        return
+    end
+
+    -- Auto：由 mpv 自动决定；Stereo / Left / Right：最终输出为立体声。
     if channel_mode == "auto" then
         mp.set_property("audio-channels", "auto")
     else
@@ -162,13 +185,45 @@ local function apply_audio_eq()
     end
 
     local filters = {}
-    for _, b in ipairs(bands) do
-        table.insert(filters, string.format("equalizer=f=%s:width_type=o:w=1:g=%.1f", b.freq, b.val))
+    local max_positive_gain = 0
+    local nyquist = sample_rate and sample_rate > 0 and sample_rate / 2 or nil
+
+    -- 低采样率下跳过超过奈奎斯特频率的频段；未知采样率时保守跳过 16k。
+    for i, b in ipairs(bands) do
+        local freq = tonumber(b.freq)
+        local above_nyquist = nyquist and freq and freq >= nyquist
+        local low_rate_16k = sample_rate and sample_rate < 44100 and i == #bands
+        local unsafe_unknown_rate = (not nyquist) and i == #bands
+        if not above_nyquist and not low_rate_16k and not unsafe_unknown_rate then
+            table.insert(filters, string.format(
+                "equalizer=f=%s:width_type=o:w=1:g=%.1f", b.freq, b.val))
+            if b.val > max_positive_gain then
+                max_positive_gain = b.val
+            end
+        end
+    end
+
+    -- Headroom：根据最大正增益预先衰减，避免 EQ 产生数字削波。
+    -- ReplayGain 开启时额外留出 6 dB 余量，避免与 ReplayGain 的增益叠加。
+    local rg_enabled = replaygain ~= "no" and replaygain ~= "false"
+        and replaygain ~= "off" and replaygain ~= ""
+    local headroom_db = max_positive_gain
+    if rg_enabled and headroom_db > 0 then
+        headroom_db = headroom_db + 6
+    end
+    if headroom_db > 0 then
+        table.insert(filters, 1, string.format("volume=%.2fdB", -headroom_db))
     end
 
     -- 声道滤镜放在 EQ 后面，EQ 调节时不会丢失声道模式。
     if channel_filter then
         table.insert(filters, channel_filter)
+    end
+
+    -- 全频段均被跳过且没有声道处理时，移除本脚本滤镜。
+    if #filters == 0 then
+        mp.commandv("af", "remove", "@eq_gui")
+        return
     end
 
     local filter_str = "@eq_gui:lavfi=[" .. table.concat(filters, ",") .. "]"
