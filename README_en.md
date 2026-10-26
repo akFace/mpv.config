@@ -19,7 +19,7 @@
 
 - Download the latest version
 
-  <a href="https://github.com/akFace/mpv.config/releases/latest"><img alt="Releases" src="https://img.shields.io/github/release/akface/mpv.config?style=for-the-badge&labelColor=140B2D&label=↓ Download&color=00B8D4"></a>
+  <a href="https://github.com/akFace/mpv.config/releases/latest"><img alt="Releases" src="https://img.shields.io/github/v/release/akface/mpv.config.svg?style=for-the-badge&labelColor=140B2D&label=%E2%86%93%20Download&color=00B8D4"></a>
 
 ## Home Pages
 
@@ -57,3 +57,9 @@
 ![image](./docs/images/Snipaste_2026-09-02_22-31-00.jpg)
 **uosc** ⇣⇣
 ![image](./docs/images/Snipaste_2026-08-24_03-00-53.jpg)
+
+## open-source-project
+
+Thanks to the following open-source projects for making this possible:   
+
+⇢ [open-source-project](https://github.com/akFace/mpv.config#open-source-project)

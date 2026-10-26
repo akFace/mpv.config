@@ -23,7 +23,7 @@
 
 - 下载最新版
 
-  <a href="https://github.com/akFace/mpv.config/releases/latest"><img alt="Releases" src="https://img.shields.io/github/release/akface/mpv.config?style=for-the-badge&labelColor=140B2D&label=↓ Download&color=00B8D4"></a>
+  <a href="https://github.com/akFace/mpv.config/releases/latest"><img alt="Releases" src="https://img.shields.io/github/v/release/akface/mpv.config.svg?style=for-the-badge&labelColor=140B2D&label=%E2%86%93%20Download&color=00B8D4"></a>
 
 ## 主页
 
@@ -73,9 +73,6 @@
 
 🍭 更多特性： [https://mpvconfig.github.io](https://mpvConfig.github.io/)
 
-## 下载最新版本
-
-[![Keyboard Shortcuts](https://flat.badgen.net/github/release/akFace/mpv.config)](https://github.com/akFace/mpv.config/releases)
 
 ## Open-source project
 
