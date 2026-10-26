@@ -11,7 +11,7 @@
   <img alt="mpv 0.40+" src="https://img.shields.io/badge/mpv-0.40%2B-2b2d33?style=flat-square&labelColor=8934D9">
   <img alt="Windows, macOS, Linux" src="https://img.shields.io/badge/platform-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2b2d33?style=flat-square&labelColor=008040">
   <img alt="License LGPL-2.1" src="https://img.shields.io/badge/license-LGPL--2.1-2b2d33?style=flat-square&labelColor=C7690C">
-  <a href="https://github.com/akFace/mpv.config/releases"><img alt="Releases" src="https://flat.badgen.net/github/release/akFace/mpv.config"></a>
+  <a href="https://github.com/akFace/mpv.config/releases"><img alt="Releases" src="https://img.shields.io/github/downloads/akface/mpv.config/total?style=flat-square&labelColor=088cac&color=000000"></a>
 </p>
 
 ### 🌏 中文 | [English](https://github.com/akFace/mpv.config/blob/main/README_en.md)
@@ -20,6 +20,10 @@
 
 - [查看详细使用教程](https://mpvConfig.github.io/docs/install.html)
 - To check out docs, visit [Installation Guide](https://mpvConfig.github.io/docs/en)
+
+- 下载最新版
+
+  <a href="https://github.com/akFace/mpv.config/releases/latest"><img alt="Releases" src="https://img.shields.io/github/release/akface/mpv.config?style=for-the-badge&labelColor=140B2D&label=↓ Download&color=00B8D4"></a>
 
 ## 主页
 

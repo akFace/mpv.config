@@ -1,6 +1,6 @@
 name: Auto Build and Release
 
-# 手动触发
+# 纯手动触发
 on:
   workflow_dispatch:
 
@@ -10,13 +10,13 @@ jobs:
 
     permissions:
       contents: write
-      pull-requests: read # 需要读取 PR 的权限
+      pull-requests: read # 需要读取 PR 权限
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 必须为 0，否则拿不到历史 git tag 和 commit
+          fetch-depth: 0 # 必须为 0，否则拿不到历史 tag 和 commit
 
       # ---------- 版本生成和 Release Notes ----------
       - name: Generate Version and Release Notes
@@ -43,24 +43,58 @@ jobs:
           echo "New Tag: $NEW_TAG"
           echo "NEW_TAG=$NEW_TAG" >> "$GITHUB_OUTPUT"
 
-          # 3. 抓取并格式化“别人的 PR”
-          # 获取从上一个 tag 到当前的所有已合并 PR
-          PR_LOGS=$(gh pr list --state merged --search "merged:>${LAST_TAG}" --json title,number,author --template '{{range .}}- {{.title}} by @{{.author.login}} in #{{.number}}{{"\n"}}{{end}}' 2>/dev/null || true)
+          # 3. 判断是否有多位贡献者 (>= 2人)
+          # 获取从上一个 Tag 到当前的所有唯一作者名
+          UNIQUE_AUTHORS=$(git log "$LAST_TAG"..HEAD --pretty=format:"%an" | sort -u)
+          AUTHOR_COUNT=$(echo "$UNIQUE_AUTHORS" | grep -v '^$' | wc -l | tr -d ' ')
 
-          # 4. 抓取“你自己的 push”（普通 commit）
-          # 使用 git log 抓取，并过滤掉 GitHub 自动生成的 PR 合并信息（Merge pull request 等噪音）
-          PUSH_LOGS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s" -- . ':(exclude)README.md' ':(exclude)README_en.md' | \
-            grep -v -E "Merge pull request|Merge branch" || true)
+          SHOW_AUTHOR=false
+          if [ "$AUTHOR_COUNT" -ge 2 ]; then
+            SHOW_AUTHOR=true
+          fi
+          echo "是否有多个贡献者: $SHOW_AUTHOR ($AUTHOR_COUNT 人)"
 
-          # 5. 组装最终的更新日志
-          if [ -z "$PR_LOGS$PUSH_LOGS" ]; then
+          # 4. 提取并格式化日志
+          RAW_LOGS=$(git log "$LAST_TAG"..HEAD --pretty=format:"%h|%an|%s" -- . ':(exclude)README.md' ':(exclude)README_en.md' || true)
+
+          COMMITS=""
+          while IFS='|' read -r hash author subject; do
+            # 跳过空行
+            if [ -z "$subject" ]; then continue; fi
+            
+            # 过滤无用的底层合并噪音
+            if echo "$subject" | grep -q -E "^(Merge pull request|Merge branch)"; then continue; fi
+
+            # 检查是否是 PR 合并（标题末尾包含 (#数字)）
+            if [[ "$subject" =~ \(#([0-9]+)\)$ ]]; then
+              PR_NUM="${BASH_REMATCH[1]}"
+              # 去掉标题末尾的 (#123)
+              CLEAN_TITLE=$(echo "$subject" | sed -E 's/ \(#[0-9]+\)$//')
+              
+              # 查一下这个 PR 的真实作者（防止自己合并了别人的分支导致作者显示错误）
+              PR_AUTHOR=$(gh pr view "$PR_NUM" --json author --jq .author.login 2>/dev/null || echo "$author")
+              
+              if [ "$SHOW_AUTHOR" = "true" ]; then
+                COMMITS+="- ${CLEAN_TITLE} by @${PR_AUTHOR} in #${PR_NUM}\n"
+              else
+                COMMITS+="- ${CLEAN_TITLE} in #${PR_NUM}\n"
+              fi
+            else
+              # 普通 commit 逻辑
+              if [ "$SHOW_AUTHOR" = "true" ]; then
+                # 使用 (\`hash\`) 格式，GitHub 会渲染成可点击的代码块
+                COMMITS+="- ${subject} by @${author} in (\`${hash}\`)\n"
+              else
+                COMMITS+="- ${subject} (\`${hash}\`)\n"
+              fi
+            fi
+          done <<< "$RAW_LOGS"
+
+          if [ -z "$COMMITS" ]; then
             COMMITS="- 自动更新配置与脚本"
-          else
-            # 使用 printf 防止 echo 吞掉换行符
-            COMMITS=$(printf "%s\n%s" "$PUSH_LOGS" "$PR_LOGS")
           fi
 
-          # 6. 生成 Release 描述文本
+          # 5. 生成 Release 描述文本
           cat > release_body.txt <<EOF
           ### UI主题皮肤包含：\`modernz\`、\`modern_glass\` 和 \`uosc\` + 多种菜单风格
 
