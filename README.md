@@ -2,8 +2,8 @@
 
 > [!TIP]
 >
-> - The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms, **multiple menu styles available**
-> - mpv 配置文件支持 Windows、macOS、Linux，全平台带有一致的右键菜单功能，**多种菜单样式可选**
+> - A feature-rich mpv player configuration with a modern UI, supports Windows, macOS, and Linux, a consistent context menu feature across all platforms, **multiple menu styles available**.
+> - 全平台带有一致的右键菜单功能，**多种菜单样式可选**
 
 ![主页](./docs/images/main.png)
 
@@ -72,7 +72,6 @@
 ![image](./docs/images/preview.gif)
 
 🍭 更多特性： [https://mpvconfig.github.io](https://mpvConfig.github.io/)
-
 
 ## Open-source project
 

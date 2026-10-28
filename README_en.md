@@ -7,8 +7,6 @@
   <a href="https://github.com/akFace/mpv.config/releases"><img alt="Releases" src="https://img.shields.io/github/downloads/akface/mpv.config/total?style=flat-square&labelColor=088cac&color=000000"></a>
 </p>
 
-> The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms.
-
 #### 🌏 [中文](https://github.com/akFace/mpv.config/blob/main/README.md) | English
 
 - Note: This document was translated by `AI-translated` and may contain some inaccuracies.
@@ -51,15 +49,15 @@
 
 ![image](./docs/images/Snipaste_2026-09-02_22-25-41.jpg)
 ![image](./docs/images/Snipaste_2026-10-10_15-08-58.jpg)
-**modern_glass** ⇣⇣
+**modern_glass** ⇣
 ![image](./docs/images/Snipaste_2026-10-13_21-06-43.jpg)
-**modernz** ⇣⇣
+**modernz** ⇣
 ![image](./docs/images/Snipaste_2026-09-02_22-31-00.jpg)
-**uosc** ⇣⇣
+**uosc** ⇣
 ![image](./docs/images/Snipaste_2026-08-24_03-00-53.jpg)
 
-## open-source-project
+## Open-source-project
 
-Thanks to the following open-source projects for making this possible:   
+Thanks to the following open-source projects for making this possible:
 
 ⇢ [open-source-project](https://github.com/akFace/mpv.config#open-source-project)
