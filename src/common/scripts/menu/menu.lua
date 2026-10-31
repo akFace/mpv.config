@@ -553,7 +553,20 @@ local function menu_glass_update()
     local kv = { mng_on = should_blur and '1' or '0' }
     
     if should_blur then
-        kv.mng_unit = string.format('%.6f', 1 / current_oh)
+        local d = mp.get_property_native('osd-dimensions')
+        local ml, mt, vw, vh = 0, 0, current_ow, current_oh
+        if type(d) == 'table' then
+            local dw, dh = tonumber(d.w) or 0, tonumber(d.h) or 0
+            if dw > 0 and dh > 0 then
+                local ml0, mt0 = tonumber(d.ml) or 0, tonumber(d.mt) or 0
+                local mr0, mb0 = tonumber(d.mr) or 0, tonumber(d.mb) or 0
+                local sx, sy = current_ow / dw, current_oh / dh
+                ml, mt = ml0 * sx, mt0 * sy
+                vw = math.max(1, (dw - ml0 - mr0) * sx)
+                vh = math.max(1, (dh - mt0 - mb0) * sy)
+            end
+        end
+        kv.mng_unit = string.format('%.6f', 1 / vh)
         kv.mng_strength = '1.0'
         kv.mng_lens = (o.glass_refraction and not o.glass_increase_contrast and not o.glass_reduce_transparency) and '1' or '0'
         kv.mng_shadow = o.glass_shadow and '1' or '0'
@@ -562,11 +575,11 @@ local function menu_glass_update()
             local r = rects[i + 1]
             local p = 'mng_' .. i
             if r then
-                kv[p .. 'x'] = string.format('%.6f', r.x / current_ow)
-                kv[p .. 'y'] = string.format('%.6f', r.y / current_oh)
-                kv[p .. 'w'] = string.format('%.6f', r.w / current_ow)
-                kv[p .. 'h'] = string.format('%.6f', r.h / current_oh)
-                kv[p .. 'r'] = string.format('%.6f', (o.radius * (r.scale or 1)) / current_oh)
+                kv[p .. 'x'] = string.format('%.6f', (r.x - ml) / vw)
+                kv[p .. 'y'] = string.format('%.6f', (r.y - mt) / vh)
+                kv[p .. 'w'] = string.format('%.6f', r.w / vw)
+                kv[p .. 'h'] = string.format('%.6f', r.h / vh)
+                kv[p .. 'r'] = string.format('%.6f', (o.radius * (r.scale or 1)) / vh)
                 kv[p .. 'a'] = '1.0'
                 kv[p .. 'f'] = (not o.glass_increase_contrast and not o.glass_reduce_transparency) and '1.0' or '0.0'
             else
