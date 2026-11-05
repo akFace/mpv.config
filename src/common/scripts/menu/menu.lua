@@ -163,7 +163,7 @@ local function apply_style()
 
         ui.shadow_alpha = 155
         ui.shadow_blur = 7
-        ui.glass_top_highlight = border_opacity > 0
+        ui.glass_top_highlight = o.glass_refraction and border_opacity > 0
         ui.glass_highlight_alpha = ui.border_alpha or 235
     end
 end

@@ -49,7 +49,7 @@ local config = {
     fisheye_fov = math.rad(180),        -- fisheye fov (0 to 2π]
     sampling = 0,                       -- 0=linear, 1=mitchell, 2=lanczos
 
-    shader_path = mp.command_native({"expand-path", "~~/shaders/mpv360.glsl"}),
+    shader_path = "'" .. mp.command_native({"expand-path", "~~/shaders/mpv360.glsl"}) .. "'",
 
     invert_mouse = false,               -- Invert mouse movement
     mouse_sensitivity = math.rad(0.2),  -- Mouse look sensitivity
