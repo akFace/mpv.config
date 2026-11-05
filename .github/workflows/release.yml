@@ -140,3 +140,30 @@ jobs:
           files: dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------- 发送 Telegram 通知 ----------
+      - name: Send Telegram Notification
+        if: success() # 只有前面都成功了才发送
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NEW_VERSION: ${{ steps.release_info.outputs.NEW_TAG }}
+        shell: bash
+        run: |
+          # 提取我们需要发送的纯文本内容 (从 "### Update log:" 开始到底部)
+          # 用 awk 提取这一小段，避免发送太多长文本导致报错
+          MSG_CONTENT=$(awk '/### Update log:/{flag=1} flag' release_body.txt)
+
+          # 拼接完整消息 (HTML 格式)
+          # 使用 <b> 标签加粗，使用 <a> 标签生成跳转链接
+          HTML_MSG="<b>🚀 【新版本 / New Version!】：${NEW_VERSION}</b>%0A%0A<a href=\"https://github.com/${GITHUB_REPOSITORY}/releases/tag/${NEW_VERSION}\">👉 点击查看完整 Release latest</a>%0A%0A${MSG_CONTENT}"
+
+          # 使用 Python3 进行彻底的 URL 编码（这步极其关键，解决换行符、特殊符号的转义问题）
+          ENCODED_MSG=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$HTML_MSG")
+
+          # 发送到 Telegram (HTML 模式不用像 Markdown 那样疯狂转义)
+          curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${CHAT_ID}" \
+            -d "parse_mode=HTML" \
+            -d "text=${ENCODED_MSG}" \
+            -d "disable_web_page_preview=true"

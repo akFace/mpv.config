@@ -1385,49 +1385,70 @@ render = function()
     if overlay_changed then overlay:update() end
 end
 
+
 local saved_modernz_visibility = nil
 local saved_osd_level = nil
-local osd_restore_token = 0
 
 local function set_osc_visibility(enable)
     local script_id = mp.get_script_name()
-    
+
     if enable then
+        -- 恢复 ModernZ OSC
         if saved_modernz_visibility ~= nil then
-            pcall(mp.commandv, 'script-message-to', 'modernz', 'osc-visibility', saved_modernz_visibility, 'yes')
+            pcall(mp.commandv,
+                'script-message-to', 'modernz',
+                'osc-visibility', saved_modernz_visibility, 'yes')
             saved_modernz_visibility = nil
         end
-        pcall(mp.commandv, 'script-message-to', 'uosc', 'disable-elements', script_id, '')
-        pcall(mp.commandv, 'script-message', 'osc-visibility', 'auto')
 
+        -- 恢复 uosc 元素
+        pcall(mp.commandv,
+            'script-message-to', 'uosc',
+            'disable-elements', script_id, '')
+
+        -- 恢复原生 OSC
+        pcall(mp.commandv,
+            'script-message-to', 'osc',
+            'osc-visibility', 'auto')
+
+        -- 立即恢复 OSD Level，确保后续命令能够显示 OSD
         if saved_osd_level ~= nil then
             local level = saved_osd_level
             saved_osd_level = nil
-            osd_restore_token = osd_restore_token + 1
-            local token = osd_restore_token
-            mp.add_timeout(0.05, function()
-                if token == osd_restore_token and mp.get_property_native('osd-level') == 0 then
-                    mp.set_property_native('osd-level', level)
-                end
-            end)
+
+            if mp.get_property_native('osd-level') == 0 then
+                mp.set_property_native('osd-level', level)
+            end
         end
+
         return
     end
 
-    osd_restore_token = osd_restore_token + 1
+    -- 隐藏菜单期间的 OSC
     local mz = mp.get_property_native('user-data/osc/visibility')
+
     if mz ~= nil then
         saved_modernz_visibility = mz
-        pcall(mp.commandv, 'script-message-to', 'modernz', 'osc-visibility', 'never', 'yes')
-    end
-    pcall(mp.commandv, 'script-message-to', 'uosc', 'disable-elements', script_id, 'timeline,controls')
-    pcall(mp.commandv, 'script-message', 'osc-visibility', 'never')
 
+        pcall(mp.commandv,
+            'script-message-to', 'modernz',
+            'osc-visibility', 'never', 'yes')
+    end
+
+    pcall(mp.commandv,
+        'script-message-to', 'uosc',
+        'disable-elements', script_id, 'timeline,controls')
+
+    pcall(mp.commandv,
+        'script-message', 'osc-visibility', 'never')
+
+    -- 保存并隐藏 OSD Level
     if saved_osd_level == nil then
         saved_osd_level = mp.get_property_native('osd-level')
         mp.set_property_native('osd-level', 0)
     end
 end
+
 
 local function remove_bindings()
     for n,_ in pairs(key_bindings) do pcall(mp.remove_key_binding,n) end
