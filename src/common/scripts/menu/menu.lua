@@ -107,6 +107,11 @@ local o_defaults = {
     modal_mask = true,
     modal_mask_alpha = 255,
     modal_z = 1000000,
+    ui_scale = 'auto',
+    design_width = 1920,
+    design_height = 1080,
+    min_ui_scale = 0.8,
+    max_ui_scale = 1.6,
     macos_font_scale = 1.4,
 }
 
@@ -709,12 +714,99 @@ local function resolve_item_height(ow, oh)
     return WINDOW_ITEM_HEIGHT_1080 * f
 end
 
+local screen_size_cache
+
+local function get_screen_size()
+    if screen_size_cache then
+        return screen_size_cache[1], screen_size_cache[2]
+    end
+
+    local w,h
+
+    -- mpv provides display dimensions from the active display.
+    -- This is preferred because it works with HiDPI/Retina better than
+    -- querying external tools and does not depend on window size.
+    local dw = mp.get_property_native('display-width')
+    local dh = mp.get_property_native('display-height')
+    if type(dw) == 'number' and type(dh) == 'number' and dw > 0 and dh > 0 then
+        w,h = dw,dh
+    end
+
+    -- Fallback for older mpv builds or platforms where display properties
+    -- are unavailable.
+    if not w or not h then
+        if platform == 'darwin' then
+            local r = utils.subprocess({
+                args = {'/usr/sbin/system_profiler', 'SPDisplaysDataType'},
+                cancellable = false,
+                capture_stdout = true,
+                capture_stderr = false,
+            })
+            if r and r.status == 0 then
+                w,h = parse_resolution(r.stdout)
+            end
+        elseif platform == 'linux' then
+            local r = utils.subprocess({
+                args = {'sh','-c','xrandr 2>/dev/null | grep -m1 -oE "[0-9]+x[0-9]+"'},
+                cancellable = false,
+                capture_stdout = true,
+                capture_stderr = false,
+            })
+            if r and r.status == 0 then
+                w,h = parse_resolution(r.stdout)
+            end
+        elseif platform == 'windows' then
+            local r = utils.subprocess({
+                args = {'powershell','-NoProfile','-Command',
+                    '[System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width.ToString()+"x"+[System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height.ToString()'},
+                cancellable = false,
+                capture_stdout = true,
+                capture_stderr = false,
+            })
+            if r and r.status == 0 then
+                w,h = parse_resolution(r.stdout)
+            end
+        end
+    end
+
+    if w and h and w > 0 and h > 0 then
+        screen_size_cache = {w,h}
+        return w,h
+    end
+
+    return nil,nil
+end
+
 local function ui_scale(ow, oh)
-    if not ow or not oh or ow <= 0 or oh <= 0 then return 1 end
-    local s = resolve_item_height(ow, oh) / BASE_ROW_HEIGHT
+    local s
+
+    if o.ui_scale ~= 'auto' then
+        local n = tonumber(o.ui_scale)
+        s = (n and n > 0) and n or 1
+    else
+        -- Prefer physical screen resolution. If unavailable, keep the old OSD-size method.
+        local sw,sh = get_screen_size()
+        if not sw or not sh then
+            sw,sh = ow,oh
+        end
+
+        if not sw or not sh or sw <= 0 or sh <= 0 then
+            s = 1
+        else
+            local dw = tonumber(o.design_width) or 1920
+            local dh = tonumber(o.design_height) or 1080
+            local sx = sw / dw
+            local sy = sh / dh
+            s = math.min(sx, sy)
+            s = clamp(s, tonumber(o.min_ui_scale) or 0.8, tonumber(o.max_ui_scale) or 2.5)
+        end
+    end
+
+    -- Apply the macOS font scale for both automatic and explicitly configured UI scales.
     if platform == 'darwin' then
         s = s * (tonumber(o.macos_font_scale) or 1.0)
     end
+
     return s
 end
 
