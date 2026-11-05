@@ -526,14 +526,38 @@ local function menu_glass_install()
     end
     
     local path = utils.join_path(dir, 'menu-liquid-glass.glsl')
-    local f = io.open(path, 'wb')
-    if not f then
-        menu_glass.failed = true
-        msg.warn('menu liquid glass: could not write shader; using translucent panels')
-        return
+    local info = utils.file_info(path)
+    local shader_matches = false
+    if info ~= nil then
+        local existing = io.open(path, 'rb')
+        if existing then
+            shader_matches = existing:read('*a') == MENU_GLASS_SHADER
+            existing:close()
+        end
     end
-    f:write(MENU_GLASS_SHADER)
-    f:close()
+    if not shader_matches then
+        if info ~= nil then
+            for _, p in ipairs(mp.get_property_native('glsl-shaders') or {}) do
+                if p == path then
+                    mp.commandv('change-list', 'glsl-shaders', 'remove', path)
+                    break
+                end
+            end
+        end
+        local f = io.open(path, 'wb')
+        if not f then
+            menu_glass.failed = true
+            msg.warn('menu liquid glass: could not write shader; using translucent panels')
+            return
+        end
+        local written, write_error = f:write(MENU_GLASS_SHADER)
+        local closed, close_error = f:close()
+        if not written or not closed then
+            menu_glass.failed = true
+            msg.warn('menu liquid glass: could not update shader cache: ' .. tostring(write_error or close_error))
+            return
+        end
+    end
     menu_glass.path = path
     for _, p in ipairs(mp.get_property_native('glsl-shaders') or {}) do
         if p == path then menu_glass.loaded = true end
