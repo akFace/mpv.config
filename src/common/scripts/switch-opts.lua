@@ -40,12 +40,13 @@ end
 local function get_config_dir()
     local ok, result = pcall(
         mp.command_native,
-        {"expand-path", "~~/"}
+        {"expand-path", "~~/mpv.conf"}
     )
     if not ok or type(result) ~= "string" or result == "" then
         return nil
     end
-    return normalize_path(result)
+    local dir = utils.split_path(result)
+    return normalize_path(dir)
 end
 
 local config_dir = get_config_dir()

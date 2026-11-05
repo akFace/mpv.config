@@ -16,7 +16,7 @@ local mp = require 'mp'
 local msg = require 'mp.msg'
 local utils = require 'mp.utils'
 
-local MARK_FILE = mp.command_native({'expand-path', '~~/script-opts/skip-intro.json'})
+local MARK_FILE = mp.command_native({'expand-path', '~~/skip-intro.json'})
 
 -- State
 local marks = {}

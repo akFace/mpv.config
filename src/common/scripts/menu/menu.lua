@@ -163,7 +163,7 @@ local function apply_style()
 
         ui.shadow_alpha = 155
         ui.shadow_blur = 7
-        ui.glass_top_highlight = border_opacity > 0
+        ui.glass_top_highlight = o.glass_refraction and border_opacity > 0
         ui.glass_highlight_alpha = ui.border_alpha or 235
     end
 end
@@ -526,14 +526,38 @@ local function menu_glass_install()
     end
     
     local path = utils.join_path(dir, 'menu-liquid-glass.glsl')
-    local f = io.open(path, 'wb')
-    if not f then
-        menu_glass.failed = true
-        msg.warn('menu liquid glass: could not write shader; using translucent panels')
-        return
+    local info = utils.file_info(path)
+    local shader_matches = false
+    if info ~= nil then
+        local existing = io.open(path, 'rb')
+        if existing then
+            shader_matches = existing:read('*a') == MENU_GLASS_SHADER
+            existing:close()
+        end
     end
-    f:write(MENU_GLASS_SHADER)
-    f:close()
+    if not shader_matches then
+        if info ~= nil then
+            for _, p in ipairs(mp.get_property_native('glsl-shaders') or {}) do
+                if p == path then
+                    mp.commandv('change-list', 'glsl-shaders', 'remove', path)
+                    break
+                end
+            end
+        end
+        local f = io.open(path, 'wb')
+        if not f then
+            menu_glass.failed = true
+            msg.warn('menu liquid glass: could not write shader; using translucent panels')
+            return
+        end
+        local written, write_error = f:write(MENU_GLASS_SHADER)
+        local closed, close_error = f:close()
+        if not written or not closed then
+            menu_glass.failed = true
+            msg.warn('menu liquid glass: could not update shader cache: ' .. tostring(write_error or close_error))
+            return
+        end
+    end
     menu_glass.path = path
     for _, p in ipairs(mp.get_property_native('glsl-shaders') or {}) do
         if p == path then menu_glass.loaded = true end
@@ -554,18 +578,21 @@ local function menu_glass_update()
     
     if should_blur then
         local d = mp.get_property_native('osd-dimensions')
-        local ml, mt, vw, vh = 0, 0, current_ow, current_oh
+        local ml, mt, mr, mb, vw, vh = 0, 0, 0, 0, current_ow, current_oh
         if type(d) == 'table' then
-            local dw, dh = tonumber(d.w) or 0, tonumber(d.h) or 0
-            if dw > 0 and dh > 0 then
-                local ml0, mt0 = tonumber(d.ml) or 0, tonumber(d.mt) or 0
-                local mr0, mb0 = tonumber(d.mr) or 0, tonumber(d.mb) or 0
-                local sx, sy = current_ow / dw, current_oh / dh
-                ml, mt = ml0 * sx, mt0 * sy
-                vw = math.max(1, (dw - ml0 - mr0) * sx)
-                vh = math.max(1, (dh - mt0 - mb0) * sy)
-            end
+            ml = clamp(tonumber(d.ml) or 0, 0, vw)
+            mt = clamp(tonumber(d.mt) or 0, 0, vh)
+            mr = clamp(tonumber(d.mr) or 0, 0, vw)
+            mb = clamp(tonumber(d.mb) or 0, 0, vh)
+            vw = math.max(1, vw - ml - mr)
+            vh = math.max(1, vh - mt - mb)
         end
+
+        -- 画面旋转90、180、270度时会出现镜像显示问题
+        local rotation = mp.get_property_number('video-rotate', 0) % 360
+        local flip_x = rotation == 90 or rotation == 180
+        local flip_y = rotation == 180 or rotation == 270
+
         kv.mng_unit = string.format('%.6f', 1 / vh)
         kv.mng_strength = '1.0'
         kv.mng_lens = (o.glass_refraction and not o.glass_increase_contrast and not o.glass_reduce_transparency) and '1' or '0'
@@ -575,10 +602,14 @@ local function menu_glass_update()
             local r = rects[i + 1]
             local p = 'mng_' .. i
             if r then
-                kv[p .. 'x'] = string.format('%.6f', (r.x - ml) / vw)
-                kv[p .. 'y'] = string.format('%.6f', (r.y - mt) / vh)
-                kv[p .. 'w'] = string.format('%.6f', r.w / vw)
-                kv[p .. 'h'] = string.format('%.6f', r.h / vh)
+                local x, y = (r.x - ml) / vw, (r.y - mt) / vh
+                local w, h = r.w / vw, r.h / vh
+                if flip_x then x = 1 - x - w end
+                if flip_y then y = 1 - y - h end
+                kv[p .. 'x'] = string.format('%.6f', x)
+                kv[p .. 'y'] = string.format('%.6f', y)
+                kv[p .. 'w'] = string.format('%.6f', w)
+                kv[p .. 'h'] = string.format('%.6f', h)
                 kv[p .. 'r'] = string.format('%.6f', (o.radius * (r.scale or 1)) / vh)
                 kv[p .. 'a'] = '1.0'
                 kv[p .. 'f'] = (not o.glass_increase_contrast and not o.glass_reduce_transparency) and '1.0' or '0.0'
