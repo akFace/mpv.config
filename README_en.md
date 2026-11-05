@@ -1,10 +1,11 @@
 # The configuration file of the mpv player with modern themes and supports Windows, macOS, Linux
 
 <p align="center">
-  <img alt="mpv 0.40+" src="https://img.shields.io/badge/mpv-0.40%2B-2b2d33?style=flat-square&labelColor=8934D9">
-  <img alt="Windows, macOS, Linux" src="https://img.shields.io/badge/platform-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2b2d33?style=flat-square&labelColor=008040">
-  <img alt="License LGPL-2.1" src="https://img.shields.io/badge/license-LGPL--2.1-2b2d33?style=flat-square&labelColor=C7690C">
-  <a href="https://github.com/akFace/mpv.config/releases"><img alt="Releases" src="https://img.shields.io/github/downloads/akface/mpv.config/total?style=flat-square&labelColor=088cac&color=000000"></a>
+  <img alt="mpv 0.40+" src="https://img.shields.io/badge/mpv-0.40%2B-2c4564?style=flat-square&labelColor=8934D9">
+  <img alt="Windows, macOS, Linux" src="https://img.shields.io/badge/platform-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2c4564?style=flat-square&labelColor=008040">
+  <img alt="License LGPL-2.1" src="https://img.shields.io/badge/license-LGPL--2.1-2c4564?style=flat-square&labelColor=C7690C">
+  <a href="https://github.com/akFace/mpv.config/releases" target="_blank"><img alt="Releases" src="https://img.shields.io/github/downloads/akface/mpv.config/total?style=flat-square&labelColor=088cac&color=2c4564"></a>
+  <a href="https://t.me/+rYLzi96XzoxjZDc1" target="_blank"><img alt="Telegram Channel" src="https://img.shields.io/badge/Telegram-Join-blue?logo=telegram&style=flat-square&labelColor=2481CC&logoColor=ffffff&color=2c4564"></a>
 </p>
 
 #### 🌏 [中文](https://github.com/akFace/mpv.config/blob/main/README.md) | English

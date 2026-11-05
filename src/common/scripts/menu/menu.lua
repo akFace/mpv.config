@@ -1,21 +1,4 @@
 -- mpv-menu-plugin-next: cross-platform menu backend for mpv.
--- Rendering model:
---   * bind the ASS overlay canvas to the CURRENT valid OSD dimensions
---   * never render while the OSD size is 0x0
---   * all menu geometry, hit-testing and mouse coordinates use the same canvas
--- Scaling model (uosc-style baselines + automatic resolution adaptation):
---   * Windowed baseline: 36px, fullscreen baseline: 50px (uosc defaults).
---   * Both baselines scale linearly with OSD height relative to 1080p,
---     clamped to [1.0x, 2.8x]. This adapts to 4K/8K without any manual
---     configuration while preserving uosc's default look at 1080p.
---   * Setting menu_item_height / menu_item_height_fullscreen to a number
---     disables the automatic scaling for that mode (explicit override).
---   * BASE_ROW_HEIGHT (48) is the nominal reference the rest of this script's
---     dimensions were written against. ui_scale() returns
---     item_height / BASE_ROW_HEIGHT, so font/padding/arrow sizes all scale
---     proportionally with the row height.
---   * menu_font_scale is applied on top of all menu text, matching uosc.
-
 local mp = require('mp')
 local msg = require('mp.msg')
 local opts = require('mp.options')
@@ -27,7 +10,7 @@ local utils = require('mp.utils')
 local o_defaults = {
     font = '',
     font_name = '',
-    font_size = 29,
+    font_size_ratio = 0.52,
     bold = false,
     italic = false,
     background = '#2C2C2E',
@@ -49,45 +32,45 @@ local o_defaults = {
     hover_arrow = '#FFFFFF',
     hover_arrow_alpha = 0,
     check = '#F2F2F7',
-    shadow = '#000000',
+    shadow = '#505050',
     bg_alpha = 0,
     shadow_alpha = 90,
-    radius = 13,
+    radius = 10,
     border_width = 2,
     hover_border_width = 0,
     hover_border = '#00000000',
     shadow_blur = 7,
 
     -- ===== Liquid Glass =====
-    glass_enabled = false,               -- 总开关；关闭后回退到原始菜单样式
-    glass_color = '#17181C',             -- 玻璃底色
-    glass_opacity = 38,                  -- 着色强度：0=清透，100=实色
-    glass_border_opacity = 8,            -- 边缘亮度/不透明度：0=不显示，100=完全显示
-    glass_shadow = true,                 -- 软阴影
-    glass_blur = true,                   -- GLSL 真模糊（需 vo=gpu-next）
-    glass_refraction = true,             -- 边缘折射
-    glass_increase_contrast = false,     -- 无障碍：黑玻璃 + 可见描边
-    glass_reduce_transparency = false,   -- 无障碍：磨砂近不透明
-    reduce_motion = false,               -- 关闭弹簧/缩放动画（当前菜单本身不使用此类动画）
-    -- uosc-aligned menu sizing. 'auto' = scale uosc's 36/50 baselines with
-    -- OSD height relative to 1080p (clamped 1.0x .. 2.8x). A positive number
-    -- disables auto scaling for that mode and pins the row height.
-    menu_item_height = 47,
-    menu_item_height_fullscreen = 50,
+    glass_enabled = false,
+    glass_color = '#17181C',
+    glass_opacity = 38,
+    glass_border_opacity = 8,
+    glass_shadow = true,
+    glass_blur = true,
+    glass_refraction = true,
+    glass_increase_contrast = false,
+    glass_reduce_transparency = false,
+    reduce_motion = false,
+
+    menu_item_height = 34,
+    scale = 1,
+    scale_fullscreen = 1.2,
     menu_font_scale = 1,
+
     separator_height = 13,
     padding_x = 12,
-    padding_y = 13,
+    padding_y = 10,
     shortcut_gap = 7,
     shortcut_right_gap = 4,
     playlist_shortcut_right_gap = 4,
     arrow_width = 32,
-    arrow_font_size = 43,
+    arrow_font_ratio = 1.48,  -- 箭头字号 = 正文字号 × 该比例（原 43 / 29 ≈ 1.48）
     arrow_char = '›',
     submenu_gap = 7,
     screen_margin = 11,
-    min_width = 350,
-    max_width = 1080,
+    min_width = 270,
+    max_width = 1000,
     max_visible_rows = 0,
     scroll_threshold = 0.80,
     scrollbar_width = 9,
@@ -103,28 +86,21 @@ local o_defaults = {
     hide_root_separators = true,
     child_indent_chars = 1,
     root_indent_chars = 1,
-    playlist_header_indent_chars = 2,
+    playlist_header_indent_chars = 1,
     modal_mask = true,
     modal_mask_alpha = 255,
     modal_z = 1000000,
-    macos_font_scale = 1.4,
+    macos_font_scale = 1,
 }
 
--- Nominal reference the whole layout was authored against.
-local BASE_ROW_HEIGHT = 47
-local WINDOW_ITEM_HEIGHT_1080 = 36
-local FULLSCREEN_ITEM_HEIGHT_1080 = 50
-local AUTO_SCALE_MIN = 1.0
-local AUTO_SCALE_MAX = 2.8
+local BASE_ROW_HEIGHT = 36
 
 local o = {}
-local ui = {} -- 统一的绘制样式表，隔离 if-else
+local ui = {}
 
 local platform = mp.get_property('platform') or ''
 
--- 预先计算所有渲染所需的最终颜色与透明度
 local function apply_style()
-    -- 默认（非 glass）参数
     ui.background = o.background
     ui.bg_alpha = o.bg_alpha
     ui.border = o.border
@@ -682,40 +658,44 @@ local function ass_text(s)
     return s
 end
 
-local function numeric_or_nil(v)
-    if v == nil or v == 'auto' or v == '' then return nil end
-    local n = tonumber(v)
-    if n and n > 0 then return n end
-    return nil
-end
+-- uosc: hidpi × (fullormaxed ? scale_fullscreen : scale)
+local function uosc_scale_factor()
+    local hidpi = tonumber(mp.get_property_native('display-hidpi-scale')) or 1
+    if hidpi <= 0 then hidpi = 1 end
 
-local function resolve_item_height(ow, oh)
     local fullscreen = mp.get_property_native('fullscreen')
+        or mp.get_property_native('window-maximized')
+    local base
     if fullscreen then
-        local explicit = numeric_or_nil(o.menu_item_height_fullscreen)
-        if explicit then return explicit end
+        base = tonumber(o.scale_fullscreen) or 1.3
     else
-        local explicit = numeric_or_nil(o.menu_item_height)
-        if explicit then return explicit end
+        base = tonumber(o.scale) or 1
     end
+    if base <= 0 then base = 1 end
 
-    local h = tonumber(oh) or 1080
-    if h <= 0 then h = 1080 end
-    local f = clamp(h / 1080, AUTO_SCALE_MIN, AUTO_SCALE_MAX)
-
-    if fullscreen then
-        return FULLSCREEN_ITEM_HEIGHT_1080 * f
-    end
-    return WINDOW_ITEM_HEIGHT_1080 * f
+    return hidpi * base
 end
 
-local function ui_scale(ow, oh)
-    if not ow or not oh or ow <= 0 or oh <= 0 then return 1 end
-    local s = resolve_item_height(ow, oh) / BASE_ROW_HEIGHT
+-- 实际行高（像素）= menu_item_height × hidpi × (全屏 ? scale_fullscreen : scale)
+local function resolve_item_height()
+    local baseline = tonumber(o.menu_item_height) or 36
+    if baseline <= 0 then baseline = 36 end
+    return baseline * uosc_scale_factor()
+end
+
+-- 布局比例因子 = 实际行高 / uosc 36px 基准。
+-- o_defaults 中所有像素常量（padding、arrow_width 等）均按 36px 基准书写。
+local function ui_scale()
+    local s = resolve_item_height() / BASE_ROW_HEIGHT
     if platform == 'darwin' then
         s = s * (tonumber(o.macos_font_scale) or 1.0)
     end
     return s
+end
+
+-- 当前行高（像素），直接等于实际行高。
+local function current_row_height()
+    return resolve_item_height()
 end
 
 local function menu_font_scale_factor()
@@ -724,8 +704,19 @@ local function menu_font_scale_factor()
     return m
 end
 
-local function text_width(s, scale)
-    local fs = o.font_size * (scale or 1) * menu_font_scale_factor()
+-- uosc: font_size = item_height × 0.48 × font_scale
+local function current_font_size()
+    return current_row_height() * (tonumber(o.font_size_ratio) or 0.48)
+        * menu_font_scale_factor()
+end
+
+-- 箭头字号 = 正文字号 × arrow_font_ratio
+local function current_arrow_font_size()
+    return current_font_size() * (tonumber(o.arrow_font_ratio) or 1.48)
+end
+
+local function text_width(s)
+    local fs = current_font_size()
     local w = 0
     for ch in tostring(s or ''):gmatch('[%z\1-\127\194-\244][\128-\191]*') do
         if ch:match('%s') then w = w + 0.32
@@ -736,21 +727,21 @@ local function text_width(s, scale)
     return w * fs
 end
 
-local function truncate_text(text, maxw, scale)
+local function truncate_text(text, maxw)
     text = tostring(text or '')
     if maxw <= 0 then return '' end
-    if text_width(text, scale) <= maxw then return text end
+    if text_width(text) <= maxw then return text end
     local ellipsis = '…'
-    local ew = text_width(ellipsis, scale)
+    local ew = text_width(ellipsis)
     if ew >= maxw then return ellipsis end
     local chars = {}
     for ch in text:gmatch('[%z\1-\127\194-\244][\128-\191]*') do
         chars[#chars + 1] = ch
     end
     local out = ''
-    for i, ch in ipairs(chars) do
+    for _, ch in ipairs(chars) do
         local candidate = out .. ch .. ellipsis
-        if text_width(candidate, scale) > maxw then break end
+        if text_width(candidate) > maxw then break end
         out = out .. ch
     end
     if out == '' then return ellipsis end
@@ -784,14 +775,14 @@ local function draw_line(x1,y1,x2,y2,color,alpha,width)
     return draw_path(p,color,alpha,width or 1,0)
 end
 
+-- 传入的 size 是最终像素字号，内部不再乘任何缩放因子。
 local function text_tag(x,y,text,color,size,align,bold,italic,alpha)
     local fn = o.font or ''
     local b = bold == nil and o.bold or bold
     local i = italic == nil and o.italic or italic
     local a = alpha == nil and 0 or alpha
-    local s = size * menu_font_scale_factor()
     return string.format('{\\an%s\\pos(%.2f,%.2f)\\fn%s\\fs%.1f\\b%s\\i%s\\bord0\\shad0\\1c%s\\1a&H%02X&}%s',
-        align or '5', x,y,fn,s,b and '1' or '0',i and '1' or '0',ass_color(color),clamp(a,0,255),ass_text(text))
+        align or '5', x,y,fn,size,b and '1' or '0',i and '1' or '0',ass_color(color),clamp(a,0,255),ass_text(text))
 end
 
 local function get_osd()
@@ -931,7 +922,7 @@ end
 local function build_layout(list, scale, level)
     scale = scale or 1
     local layout = {}
-    local row_h = BASE_ROW_HEIGHT * scale
+    local row_h = current_row_height()
     local sep_h = o.separator_height * scale
     local pad_y = o.padding_y * scale
     local top_pad = pad_y
@@ -966,10 +957,11 @@ local function panel_max_height(oh, scale)
 end
 
 local function measure(list, ow, oh, level)
-    local scale = ui_scale(ow, oh)
+    local scale = ui_scale()
     level = level or 1
     local px = o.padding_x * scale
-    local child_indent = (level > 1) and (o.child_indent_chars * o.font_size * scale) or (o.root_indent_chars * o.font_size * scale)
+    local fs = current_font_size()
+    local child_indent = (level > 1) and (o.child_indent_chars * fs) or (o.root_indent_chars * fs)
     local gap = o.shortcut_gap * scale
     local arrow = o.arrow_width * scale
     local min_w = o.min_width * scale
@@ -981,9 +973,9 @@ local function measure(list, ow, oh, level)
     for _,it in ipairs(list or {}) do
         if not is_hidden(it) and it.type ~= 'separator' then
             local title, shortcut = split_title(it.title)
-            local w = text_width(title, scale) + px*2 + child_indent
+            local w = text_width(title) + px*2 + child_indent
             if state_has(it,'checked') then w = w + 20*scale end
-            if shortcut ~= '' then w = w + gap + text_width(shortcut, scale) + sr_gap end
+            if shortcut ~= '' then w = w + gap + text_width(shortcut) + sr_gap end
             if it.type == 'submenu' then w = w + arrow end
             content_w = math.max(content_w, w)
         end
@@ -991,7 +983,7 @@ local function measure(list, ow, oh, level)
 
     local layout, desired_h, row_h, top_pad, bottom_pad, header_h = build_layout(list, scale, level)
     local playlist_header = get_playlist_header(list, level)
-    if playlist_header then content_w = math.max(content_w, text_width(playlist_header, scale) + px * 2) end
+    if playlist_header then content_w = math.max(content_w, text_width(playlist_header) + px * 2) end
 
     local max_h = panel_max_height(oh, scale)
     local scrollable = desired_h > max_h + 0.01
@@ -1003,7 +995,7 @@ local function measure(list, ow, oh, level)
     local h = scrollable and max_h or desired_h
     local max_scroll = math.max(0, desired_h - h)
     local scroll_offset = clamp(tonumber(scroll_offsets[level]) or 0, 0, max_scroll)
-    
+
     if not scrollable then
         scroll_offset = 0
         scroll_offsets[level] = 0
@@ -1029,13 +1021,13 @@ local function ensure_visible(level, index)
         if item.index == index then g=item; break end
     end
     if not g then return end
-    
+
     local top = r.top_pad + (r.header_h or 0)
     local bottom = r.h - r.bottom_pad
     local offset = r.scroll_offset or 0
     local top_screen = g.y - offset
     local bottom_screen = g.y + g.h - offset
-    
+
     if top_screen < top then
         offset = g.y - top
     elseif bottom_screen > bottom then
@@ -1080,7 +1072,7 @@ end
 local function scroll_panel(level, delta)
     local r=rects[level]
     if not r or not r.scrollable then return false end
-    local step = (r.row_h or BASE_ROW_HEIGHT) * tonumber(o.scroll_step or 1)
+    local step = (r.row_h or current_row_height()) * tonumber(o.scroll_step or 1)
     if step <= 0 then step = r.row_h or 1 end
     local new_offset = clamp((r.scroll_offset or 0) + delta*step, 0, r.max_scroll or 0)
     if math.abs(new_offset - (r.scroll_offset or 0)) < 0.01 then return false end
@@ -1101,7 +1093,6 @@ local function draw_modal_mask(ow, oh)
     return modal_mask_cache.s
 end
 
--- 根据层级计算嵌套子菜单的透明度 (隔绝 if-else)
 local function calc_panel_alpha(level)
     if not o.glass_enabled then return ui.bg_alpha end
     local opacity = math.max(0, math.min(100, tonumber(o.glass_opacity) or 38))
@@ -1126,14 +1117,9 @@ local function draw_menu(list,x,y,level,ow,oh,w,h,layout,scale,meta)
     local out={}
     local radius=o.radius*scale
 
-    -- 阴影 (直接读取预先计算好的 ui)
     out[#out+1] = draw_path(round_rect(x+2*scale,y+3*scale,w,h,radius), ui.shadow, ui.shadow_alpha, 0, ui.shadow_blur*scale, ui.shadow)
-
-    -- 面板背景 (读取 ui 和嵌套层级透明度)
     out[#out+1] = draw_path(round_rect(x,y,w,h,radius), ui.background, calc_panel_alpha(level), ui.border_width*scale, 0, ui.border, ui.border_alpha)
-    
-    -- 玻璃顶部高光：仅当玻璃模糊着色器真正生效时才绘制。
-    -- idle / 无视频 / vo 非 gpu-next / shader 未加载时，黑底下会多出一条白线。
+
     local glass_rim_active = ui.glass_top_highlight
         and o.glass_blur
         and menu_glass.loaded
@@ -1148,12 +1134,14 @@ local function draw_menu(list,x,y,level,ow,oh,w,h,layout,scale,meta)
     local content_bottom = y + h - meta.bottom_pad
     local scroll_offset = meta.scroll_offset or 0
 
+    local fs = current_font_size()
+
     local playlist_header = get_playlist_header(list, level)
     if meta.header_h and meta.header_h > 0 and playlist_header then
         local header_y = y + meta.top_pad + meta.header_h / 2
-        local header_indent = o.playlist_header_indent_chars * o.font_size * scale
+        local header_indent = o.playlist_header_indent_chars * fs
         local header_x = x + o.padding_x*scale + header_indent
-        out[#out+1] = text_tag(header_x, header_y, playlist_header, o.text, o.font_size*scale, '4')
+        out[#out+1] = text_tag(header_x, header_y, playlist_header, o.text, fs, '4')
         local line_y = y + meta.top_pad + meta.header_h - 0.5*scale
         local line_right = x + w - o.padding_x*scale
         out[#out+1] = draw_line(header_x, line_y, line_right, line_y, o.separator, 110, math.max(1,scale))
@@ -1168,7 +1156,7 @@ local function draw_menu(list,x,y,level,ow,oh,w,h,layout,scale,meta)
             local clip_tag = string.format('{\\clip(%.2f,%.2f,%.2f,%.2f)}', x, content_top, x+w, content_bottom)
             if it.type == 'separator' then
                 local sy = ry + g.h/2
-                local indent = (level > 1) and (o.child_indent_chars * o.font_size * scale) or 0
+                local indent = (level > 1) and (o.child_indent_chars * fs) or 0
                 local sep_left = x + o.padding_x * scale + indent
                 local sep_right = x + w - 1 * scale
                 row_out[#row_out+1]=draw_line(sep_left,sy,sep_right,sy,o.separator,110,math.max(1,scale))
@@ -1184,18 +1172,17 @@ local function draw_menu(list,x,y,level,ow,oh,w,h,layout,scale,meta)
                     local sel_w = math.max(0, w - 2 * hm_x)
                     local sel_h = math.max(0, g.h - 2 * hm_y)
                     local hr = tonumber(o.hover_corner_radius or o.radius or 0) * scale
-                    
+
                     row_out[#row_out+1]=draw_path(round_rect(sel_x,sel_y,sel_w,sel_h,hr), ui.hover, ui.hover_alpha,
                         (tonumber(ui.hover_border_width) or 0)*scale, 0, ui.hover_border)
                 end
-                
+
                 local title,shortcut=split_title(it.title)
                 local disabled=state_has(it,'disabled')
                 local c=disabled and o.disabled_text or (ih and o.hover_text or o.text)
                 local px=o.padding_x*scale
-                local child_indent = (level > 1) and (o.child_indent_chars * o.font_size * scale) or (o.root_indent_chars * o.font_size * scale)
+                local child_indent = (level > 1) and (o.child_indent_chars * fs) or (o.root_indent_chars * fs)
                 local text_y=ry+g.h/2
-                local fs=o.font_size*scale
                 local left_x=x+px+child_indent
                 local check_w=0
                 if state_has(it,'checked') then
@@ -1208,7 +1195,7 @@ local function draw_menu(list,x,y,level,ow,oh,w,h,layout,scale,meta)
                 local arrow_center = nil
                 local shortcut_right_x = nil
                 local shortcut_right_gap = math.max(0, tonumber(o.shortcut_right_gap or 0)) * scale
-                
+
                 if playlist_header and shortcut ~= '' then
                     shortcut_right_gap = shortcut_right_gap + math.max(0, tonumber(o.playlist_shortcut_right_gap or 0)) * scale
                 end
@@ -1225,18 +1212,18 @@ local function draw_menu(list,x,y,level,ow,oh,w,h,layout,scale,meta)
                 local shortcut_display_w = 0
                 if shortcut ~= '' and shortcut_right_x then
                     local shortcut_maxw = math.max(1, shortcut_right_x - left_x - o.shortcut_gap * scale)
-                    display_shortcut = truncate_text(shortcut, shortcut_maxw, scale)
-                    shortcut_display_w = text_width(display_shortcut, scale)
+                    display_shortcut = truncate_text(shortcut, shortcut_maxw)
+                    shortcut_display_w = text_width(display_shortcut)
                     right_edge = shortcut_right_x - shortcut_display_w - o.shortcut_gap * scale
                 end
 
-                local display_title=truncate_text(title,math.max(1,right_edge-left_x),scale)
+                local display_title=truncate_text(title,math.max(1,right_edge-left_x))
                 row_out[#row_out+1]=text_tag(left_x,text_y,display_title,c,fs,'4')
                 if display_shortcut ~= '' then
                     row_out[#row_out+1]=text_tag(shortcut_right_x,text_y,display_shortcut,disabled and o.disabled_text or (ih and o.hover_shortcut or o.shortcut),fs,'6')
                 end
                 if it.type == 'submenu' then
-                    local arrow_fs=o.arrow_font_size*scale
+                    local arrow_fs=current_arrow_font_size()
                     row_out[#row_out+1]=text_tag(arrow_center,text_y,o.arrow_char,ih and o.hover_arrow or o.submenu_arrow,arrow_fs,'5',nil,nil,ih and o.hover_arrow_alpha or o.arrow_alpha)
                 end
             end
@@ -1263,8 +1250,6 @@ local function draw_menu(list,x,y,level,ow,oh,w,h,layout,scale,meta)
     return table.concat(out,'\n')
 end
 
--- 更新 overlay 数据，但只有内容或画布尺寸真的变化时才提交。
--- 这能跳过重复 render() 生成相同 ASS 内容后的无效 overlay:update()。
 local function set_overlay_data(data, ow, oh)
     local changed = overlay.data ~= data or overlay.res_x ~= ow or overlay.res_y ~= oh
     overlay.res_x = ow
@@ -1326,13 +1311,13 @@ local function prepare_initial_playlist_scrolls(list, ow, oh, level)
                 and it._playlist_total > 1 then
 
                 local _, _, layout, scale = measure(child, ow, oh, child_level)
-                local row_h = BASE_ROW_HEIGHT * scale
+                local row_h = current_row_height()
                 local pad_y = o.padding_y * scale
                 local header_h = (type(it._playlist_header) == 'string' and it._playlist_header ~= '') and row_h or 0
 
                 local desired_h = pad_y + header_h + pad_y
                 for _, g in ipairs(layout or {}) do desired_h = desired_h + g.h end
-                
+
                 local max_h = panel_max_height(oh, scale)
                 local max_scroll = math.max(0, desired_h - math.min(desired_h, max_h))
 
@@ -1729,7 +1714,7 @@ local function show(attempt)
         selected_level=1
         selected_index=first_selectable(items)
         local sow, soh = get_osd()
-        
+
         if sow and soh then
             last_osd_w,last_osd_h=sow,soh
             prepare_initial_playlist_scrolls(items, sow, soh, 1)
@@ -1746,12 +1731,13 @@ mp.register_script_message('hide',hide)
 mp.register_script_message('geometry-debug',function()
     local ow,oh=get_osd()
     local x,y= get_mouse()
-    local item_h = (ow and oh) and resolve_item_height(ow, oh) or WINDOW_ITEM_HEIGHT_1080
-    local scale = (ow and oh) and ui_scale(ow, oh) or 1
-    local font_h = o.font_size * scale * menu_font_scale_factor()
-    msg.info(string.format('OSD=%s | canvas=OSD | mouse=%.1f,%.1f | overlay.res=%d,%d | item_h=%.1f | font=%.1f | scale=%.3f | fullscreen=%s',
+    local item_h = resolve_item_height()
+    local font_h = current_font_size()
+    local scale = ui_scale()
+    local fullscreen = mp.get_property_native('fullscreen') or mp.get_property_native('window-maximized')
+    msg.info(string.format('OSD=%s | canvas=OSD | mouse=%.1f,%.1f | overlay.res=%d,%d | item_h=%.1f | font=%.1f | scale=%.3f | fullormaxed=%s',
         ow and oh and (ow..'x'..oh) or '0x0', x, y, overlay.res_x, overlay.res_y,
-        item_h, font_h, scale, tostring(mp.get_property_native('fullscreen'))))
+        item_h, font_h, scale, tostring(fullscreen)))
     mp.osd_message(string.format('OSD %s | item_h=%.0f | font=%.0f | scale=%.2f | mouse %.0f,%.0f',
         ow and oh and (ow..'x'..oh) or '0x0', item_h, font_h, scale, x, y), 2)
 end)
@@ -1790,7 +1776,7 @@ mp.observe_property('osd-dimensions','native',function()
     if not ow or not oh then return end
     local changed=(ow~=last_osd_w or oh~=last_osd_h)
     last_osd_w,last_osd_h=ow,oh
-    
+
     if changed then
         recompute_open_playlist_scrolls(ow,oh)
         if #open_path > 0 then
@@ -1830,6 +1816,13 @@ mp.observe_property('fullscreen','native',function()
     if ow and oh then recompute_open_playlist_scrolls(ow,oh) end
     rects = {}
     render()
+end)
+
+mp.observe_property('window-maximized','native',function()
+    if visible then render() end
+end)
+mp.observe_property('display-hidpi-scale','native',function()
+    if visible then render() end
 end)
 
 mp.observe_property('playlist-playing-pos','number',function()
@@ -1986,7 +1979,6 @@ local function open_windows_primary(multi, folder, save, default_name, src)
     local was_ontop = mp.get_property_native("ontop")
     if was_ontop then mp.set_property_native("ontop", false) end
 
-    -- 重写：使用 table.concat 逐行构建 PowerShell 脚本，彻底避免 Lua 长字符串拼接导致的换行丢失问题
     local script
     if folder then
         script = table.concat({
@@ -2455,7 +2447,7 @@ mp.register_event('end-file',hide)
 mp.register_event('shutdown',hide)
 mp.add_periodic_timer(0.04,function() if visible then on_mouse_move() end end)
 
-msg.info('cross-platform menu backend v51 loaded as '..BACKEND_NAME)
+msg.info('cross-platform menu backend loaded as '..BACKEND_NAME)
 
 local function reload_menu()
     msg.info('menu: reload_menu() called')
