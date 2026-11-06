@@ -188,6 +188,11 @@ local items = {}
 local items_dirty = true
 local open_path = {}
 local rects = {}
+-- 缓存菜单静态测量结果；鼠标悬停时无需反复扫描整份长播放列表。
+local measure_cache = setmetatable({}, { __mode = 'k' })
+local function clear_measure_cache()
+    measure_cache = setmetatable({}, { __mode = 'k' })
+end
 local hover_level, hover_index = nil, nil
 local hover_sort_level = nil
 -- 播放列表排序状态：分批执行以便 loading 动画和菜单重绘有机会运行。
@@ -980,22 +985,61 @@ local function measure(list, ow, oh, level)
     local max_w = o.max_width * scale
     local max_screen_w = math.max(min_w, ow - 2*(o.screen_margin*scale))
     local sr_gap = math.max(0, tonumber(o.shortcut_right_gap) or 0) * scale
+    local playlist_header = get_playlist_header(list, level)
 
-    local content_w = min_w
-    for _,it in ipairs(list or {}) do
-        if not is_hidden(it) and it.type ~= 'separator' then
-            local title, shortcut = split_title(it.title)
-            local w = text_width(title) + px*2 + child_indent
-            if state_has(it,'checked') then w = w + 20*scale end
-            if shortcut ~= '' then w = w + gap + text_width(shortcut) + sr_gap end
-            if it.type == 'submenu' then w = w + arrow end
-            content_w = math.max(content_w, w)
+    -- 这些参数决定列表宽度和行布局；列表内容变化时由快照更新逻辑清空缓存。
+    local cache_key = table.concat({
+        tostring(level), tostring(ow), tostring(oh), tostring(scale),
+        tostring(fs), tostring(current_row_height()), tostring(px), tostring(o.padding_y),
+        tostring(o.separator_height), tostring(o.hide_root_separators),
+        tostring(o.child_indent_chars), tostring(o.root_indent_chars),
+        tostring(gap), tostring(arrow), tostring(min_w), tostring(max_w),
+        tostring(sr_gap), tostring(o.playlist_shortcut_right_gap),
+        tostring(playlist_header or '')
+    }, '\31')
+
+    local cached = measure_cache[list]
+    local base
+    if cached and cached.key == cache_key then
+        base = cached
+    else
+        local content_w = min_w
+        for _,it in ipairs(list or {}) do
+            if not is_hidden(it) and it.type ~= 'separator' then
+                local title, shortcut = split_title(it.title)
+                local w = text_width(title) + px*2 + child_indent
+                if state_has(it,'checked') then w = w + 20*scale end
+                if shortcut ~= '' then w = w + gap + text_width(shortcut) + sr_gap end
+                if it.type == 'submenu' then w = w + arrow end
+                content_w = math.max(content_w, w)
+            end
         end
+
+        local layout, desired_h, built_row_h, top_pad, bottom_pad, header_h = build_layout(list, scale, level)
+        if playlist_header then
+            content_w = math.max(content_w, text_width(playlist_header) + px * 2 + fs * 2.2)
+        end
+
+        base = {
+            key = cache_key,
+            content_w = content_w,
+            layout = layout,
+            desired_h = desired_h,
+            row_h = built_row_h,
+            top_pad = top_pad,
+            bottom_pad = bottom_pad,
+            header_h = header_h,
+        }
+        measure_cache[list] = base
     end
 
-    local layout, desired_h, row_h, top_pad, bottom_pad, header_h = build_layout(list, scale, level)
-    local playlist_header = get_playlist_header(list, level)
-    if playlist_header then content_w = math.max(content_w, text_width(playlist_header) + px * 2 + fs * 2.2) end
+    local content_w = base.content_w
+    local layout = base.layout
+    local desired_h = base.desired_h
+    local built_row_h = base.row_h
+    local top_pad = base.top_pad
+    local bottom_pad = base.bottom_pad
+    local header_h = base.header_h
 
     local max_h = panel_max_height(oh, scale)
     local scrollable = desired_h > max_h + 0.01
@@ -1017,7 +1061,7 @@ local function measure(list, ow, oh, level)
 
     local meta = {
         scrollable = scrollable, scroll_offset = scroll_offset, max_scroll = max_scroll,
-        row_h = row_h, top_pad = top_pad, bottom_pad = bottom_pad, header_h = header_h,
+        row_h = built_row_h, top_pad = top_pad, bottom_pad = bottom_pad, header_h = header_h,
         content_h = math.max(1, h - top_pad - bottom_pad - header_h), desired_h = desired_h,
         scrollbar_width = o.scrollbar_width * scale, scrollbar_gap = o.scrollbar_gap * scale,
         scrollbar_right_gap = o.scrollbar_right_gap * scale,
@@ -1064,9 +1108,19 @@ local function hit_test(x,y)
                 local sb_left = r.x + r.w - r.padding_x - sbg - sbw
                 if x >= sb_left - sbg and x <= r.x + r.w then return level,nil end
             end
-            for _,g in ipairs(r.layout) do
-                local gy = r.top_pad + g.y - r.top_pad - (r.scroll_offset or 0)
-                if ly >= gy and ly < gy + g.h then
+            -- layout 按 y 顺序排列；用二分查找定位鼠标所在行，
+            -- 避免每次鼠标移动都从头扫描整个播放列表。
+            local layout = r.layout or {}
+            local content_y = ly + (r.scroll_offset or 0)
+            local lo, hi = 1, #layout
+            while lo <= hi do
+                local mid = math.floor((lo + hi) / 2)
+                local g = layout[mid]
+                if content_y < g.y then
+                    hi = mid - 1
+                elseif content_y >= g.y + g.h then
+                    lo = mid + 1
+                else
                     if r.items[g.index].type == 'separator' then return level,nil end
                     return level,g.index
                 end
@@ -1201,11 +1255,30 @@ local function draw_menu(list,x,y,level,ow,oh,w,h,layout,scale,meta)
         out[#out+1] = draw_line(header_x, line_y, line_right, line_y, o.separator, 110, sep_w)
     end
 
-    for _,g in ipairs(layout) do
+    -- 通过二分查找找到第一个与可视区域相交的行，
+    -- 绘制时只遍历屏幕内的行，不再扫描整个长列表。
+    local visible_top = content_top - y + scroll_offset
+    local visible_bottom = content_bottom - y + scroll_offset
+    local first_visible = 1
+    local lo, hi = 1, #layout
+    while lo <= hi do
+        local mid = math.floor((lo + hi) / 2)
+        local g = layout[mid]
+        if g.y + g.h < visible_top then
+            lo = mid + 1
+        else
+            first_visible = mid
+            hi = mid - 1
+        end
+    end
+
+    for layout_pos = first_visible, #layout do
+        local g = layout[layout_pos]
         local idx = g.index
         local it = list[idx]
         local ry = y + g.y - scroll_offset
-        if ry + g.h >= content_top and ry <= content_bottom then
+        if ry > content_bottom then break end
+        if ry + g.h >= content_top then
             local row_out = {}
             local clip_tag = string.format('{\\clip(%.2f,%.2f,%.2f,%.2f)}', x, content_top, x+w, content_bottom)
             if it.type == 'separator' then
@@ -1788,6 +1861,7 @@ refresh_menu_snapshot = function()
     local ok, data = pcall(mp.get_property_native, menu_prop)
     if ok and type(data) == 'table' then
         items = data
+        clear_measure_cache()
         normalize_menu(items)
         items_dirty = false
         return true
@@ -1806,13 +1880,6 @@ local function open_hover_now(l, i)
         return true
     end
     if o.click_to_show_submenus then return false end
-
-    if it._playlist_total or it._playlist_current_menu_index then
-        refresh_menu_snapshot()
-        list=menu_at(l)
-        it=list and list[i]
-        if not it or it.type~='submenu' then return false end
-    end
 
     open_path[l]=i
     for k=#open_path,l+1,-1 do open_path[k]=nil end
@@ -1896,6 +1963,7 @@ mp.add_timeout(0,function()
 end)
 
 mp.observe_property(menu_prop,'native',function(_,v)
+    clear_measure_cache()
     if type(v)=='table' then
         items=v
         items_dirty=true
