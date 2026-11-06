@@ -215,44 +215,52 @@ local function merge_inputs(skip_backup)
     local main_lines  = split_lines(main_content)
     local extra_lines = split_lines(extra_content)
 
-    -- 解析 custom-input.conf
-    --   extra_blocks     普通键：key -> block
-    --   extra_underscore `_` 键：有序的 block 列表
-    --   order            普通键第一次出现的顺序
-    local extra_blocks     = {}
-    local extra_underscore = {}
-    local menu_removals    = {}
-    local order = {}
-    local current_key   = nil
-    local current_block = nil
+    local function parse_custom_blocks(lines)
+        local extra_blocks = {}
+        local extra_sequence = {}
+        local extra_key_slot = {}
+        local menu_removals = {}
+        local current_key = nil
+        local current_block = nil
 
-    for _, line in ipairs(extra_lines) do
-        local remove_path = line:match("#rm_menu:%s*(.-)%s*$")
-        if remove_path ~= nil then
-            remove_path = normalize_line(remove_path:gsub("%s*#@.*$", ""))
-            if remove_path ~= "" then
-                menu_removals[remove_path] = true
-            end
-            current_key = nil
-            current_block = nil
-        else
-            local key = parse_key(line)
-            if key then
-                current_key = key
-                current_block = { lines = { line } }
-                if key == "_" then
-                    extra_underscore[#extra_underscore + 1] = current_block
-                else
-                    if not extra_blocks[key] then
-                        order[#order + 1] = key
-                    end
-                    extra_blocks[key] = current_block
+        for _, line in ipairs(lines) do
+            local remove_path = line:match("#rm_menu:%s*(.-)%s*$")
+            if remove_path ~= nil then
+                remove_path = normalize_line(remove_path:gsub("%s*#@.*$", ""))
+                if remove_path ~= "" then
+                    menu_removals[remove_path] = true
                 end
-            elseif current_key then
-                current_block.lines[#current_block.lines + 1] = line
+                current_key = nil
+                current_block = nil
+            else
+                local key = parse_key(line)
+                if key then
+                    current_key = key
+                    current_block = { lines = { line } }
+                    if key == "_" then
+                        extra_sequence[#extra_sequence + 1] = current_block
+                    else
+                        if extra_blocks[key] then
+                            extra_sequence[extra_key_slot[key]] = current_block
+                        else
+                            extra_key_slot[key] = #extra_sequence + 1
+                            extra_sequence[#extra_sequence + 1] = current_block
+                        end
+                        extra_blocks[key] = current_block
+                    end
+                elseif current_key then
+                    current_block.lines[#current_block.lines + 1] = line
+                end
             end
         end
+
+        return extra_blocks, extra_sequence, menu_removals
     end
+
+    -- 解析 custom-input.conf
+    --   extra_blocks   普通键：key -> 最新 block
+    --   extra_sequence 按原始出现顺序保存所有 block
+    local extra_blocks, extra_sequence, menu_removals = parse_custom_blocks(extra_lines)
 
     local function is_removed_menu_block(lines)
         local path = get_menu_path(lines)
@@ -272,6 +280,12 @@ local function merge_inputs(skip_backup)
             block[#block + 1] = lines[k]
         end
         return block
+    end
+
+    local function append_lines(block, output)
+        for _, line in ipairs(block) do
+            output[#output + 1] = line
+        end
     end
 
     local function append_commented_block(block, output)
@@ -334,9 +348,7 @@ local function merge_inputs(skip_backup)
                     replaced_keys[#replaced_keys + 1] = key
                 end
             else
-                for _, line in ipairs(block) do
-                    result[#result + 1] = line
-                end
+                append_lines(block, result)
             end
             i = j
         else
@@ -345,28 +357,25 @@ local function merge_inputs(skip_backup)
         end
     end
 
-    -- 2) 追加 custom 里主文件没有的普通键
-    for _, key in ipairs(order) do
-        if not is_removed_menu_block(extra_blocks[key].lines) then
-            for _, l in ipairs(extra_blocks[key].lines) do
-                result[#result + 1] = l
+    -- 2) 按 custom 文件中的原始顺序追加块：
+    --    自定义菜单项不受 #rm_menu 规则影响（它们不会被移除），
+    --    仅主文件中的旧菜单项会在第 1 步被删除。
+    for _, block in ipairs(extra_sequence) do
+        local first_line = block.lines[1] or ""
+        local key = parse_key(first_line)
+
+        if key == "_" then
+            local normalized = normalize_line(first_line)
+            if not main_underscore_set[normalized] then
+                append_lines(block.lines, result)
+                added_underscore[#added_underscore + 1] = normalized
+                main_underscore_set[normalized] = true
             end
+        elseif key then
+            append_lines(block.lines, result)
             if not main_key_lines[key] then
                 added_keys[#added_keys + 1] = key
             end
-        end
-    end
-
-    -- 3) 追加 custom 里的 `_` 块：按内容去重
-    for _, block in ipairs(extra_underscore) do
-        local first_line = normalize_line(block.lines[1] or "")
-        if not is_removed_menu_block(block.lines) and not main_underscore_set[first_line] then
-            for _, l in ipairs(block.lines) do
-                result[#result + 1] = l
-            end
-            added_underscore[#added_underscore + 1] = first_line
-            -- 更新集合，避免 custom 内部自身重复
-            main_underscore_set[first_line] = true
         end
     end
 
