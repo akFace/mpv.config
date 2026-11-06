@@ -58,7 +58,8 @@ local o_defaults = {
     scale_fullscreen = 1.2,
     menu_font_scale = 1,
 
-    separator_height = 13,
+    separator_width = 1,
+    separator_height = 7,
     padding_x = 12,
     padding_y = 10,
     shortcut_gap = 7,
@@ -1127,7 +1128,8 @@ local function draw_menu(list,x,y,level,ow,oh,w,h,layout,scale,meta)
         and current_vo == 'gpu-next'
         and video_track_present
     if glass_rim_active then
-        out[#out+1] = draw_line(x+radius*0.72,y+0.8*scale,x+w-radius*0.72,y+0.8*scale, '#FFFFFF', ui.glass_highlight_alpha, math.max(0.7,0.8*scale))
+        local sep_w = math.max(0.5, (tonumber(o.separator_width) or 1) * scale)
+        out[#out+1] = draw_line(x+radius*0.72,y+0.8*scale,x+w-radius*0.72,y+0.8*scale, '#FFFFFF', ui.glass_highlight_alpha, sep_w)
     end
 
     local content_top = y + meta.top_pad + (meta.header_h or 0)
@@ -1144,7 +1146,8 @@ local function draw_menu(list,x,y,level,ow,oh,w,h,layout,scale,meta)
         out[#out+1] = text_tag(header_x, header_y, playlist_header, o.text, fs, '4')
         local line_y = y + meta.top_pad + meta.header_h - 0.5*scale
         local line_right = x + w - o.padding_x*scale
-        out[#out+1] = draw_line(header_x, line_y, line_right, line_y, o.separator, 110, math.max(1,scale))
+        local sep_w = math.max(0.5, (tonumber(o.separator_width) or 1) * scale)
+        out[#out+1] = draw_line(header_x, line_y, line_right, line_y, o.separator, 110, sep_w)
     end
 
     for _,g in ipairs(layout) do
@@ -1159,7 +1162,8 @@ local function draw_menu(list,x,y,level,ow,oh,w,h,layout,scale,meta)
                 local indent = (level > 1) and (o.child_indent_chars * fs) or 0
                 local sep_left = x + o.padding_x * scale + indent
                 local sep_right = x + w - 1 * scale
-                row_out[#row_out+1]=draw_line(sep_left,sy,sep_right,sy,o.separator,110,math.max(1,scale))
+                local sep_w = math.max(0.5, (tonumber(o.separator_width) or 1) * scale)
+                row_out[#row_out+1]=draw_line(sep_left,sy,sep_right,sy,o.separator,110,sep_w)
             else
                 local path_selected = (open_path[level] == idx)
                 local path_hovered = (hover_level == level and hover_index == idx)
