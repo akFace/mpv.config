@@ -12,7 +12,8 @@
   <img alt="Windows, macOS, Linux" src="https://img.shields.io/badge/platform-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2c4564?style=flat-square&labelColor=008040">
   <img alt="License LGPL-2.1" src="https://img.shields.io/badge/license-LGPL--2.1-2c4564?style=flat-square&labelColor=C7690C">
   <a href="https://github.com/akFace/mpv.config/releases" target="_blank"><img alt="Releases" src="https://img.shields.io/github/downloads/akface/mpv.config/total?style=flat-square&labelColor=088cac&color=2c4564"></a>
-  <a href="https://t.me/+rYLzi96XzoxjZDc1" target="_blank"><img alt="Telegram Channel" src="https://img.shields.io/badge/Telegram-Join-blue?logo=telegram&style=flat-square&labelColor=2481CC&logoColor=ffffff&color=2c4564"></a>
+  <a href="https://discord.gg/w57t6m6jWu" target="_blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-blue?logo=discord&style=flat-square&labelColor=5966F3&logoColor=ffffff&color=2c4564"></a>
+  <a href="https://pd.qq.com/s/cp5zsp7a4?b=9" target="_blank"><img alt="Discord" src="https://img.shields.io/badge/QQ频道-blue?logo=qq&style=flat-square&labelColor=00BFE0&logoColor=ffffff&color=2c4564"></a>
 </p>
 
 ### 🌏 中文 | [English](https://github.com/akFace/mpv.config/blob/main/README_en.md)
@@ -28,7 +29,7 @@
 
 ## 主页
 
-- 🎉 主页网站：[https://mpvconfig.github.io](https://mpvConfig.github.io/)
+- 🎉 网站主页：[https://mpvconfig.github.io](https://mpvConfig.github.io/)
 - 📔 文档主页：[https://mpvconfig.github.io/docs](https://mpvconfig.github.io/docs/)
 
 ## 主要功能

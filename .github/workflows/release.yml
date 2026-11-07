@@ -46,7 +46,6 @@ jobs:
           # 3. 判断是否有多位贡献者 (>= 2人)
           UNIQUE_AUTHORS=$(git log "$LAST_TAG"..HEAD --pretty=format:"%an" | sort -u)
           AUTHOR_COUNT=$(echo "$UNIQUE_AUTHORS" | grep -v '^$' | wc -l | tr -d ' ')
-
           SHOW_AUTHOR=false
           if [ "$AUTHOR_COUNT" -ge 2 ]; then
             SHOW_AUTHOR=true
@@ -54,7 +53,6 @@ jobs:
           echo "是否有多个贡献者: $SHOW_AUTHOR ($AUTHOR_COUNT 人)"
 
           # 4. 提取并格式化日志
-          # 获取短哈希 (%h)、全哈希 (%H)、作者 (%an)、标题 (%s)
           RAW_LOGS=$(git log "$LAST_TAG"..HEAD --pretty=format:"%h|%H|%an|%s" -- . ':(exclude)README.md' ':(exclude)README_en.md' || true)
 
           COMMITS=""
@@ -69,6 +67,8 @@ jobs:
             if [[ "$subject" =~ \(#([0-9]+)\)$ ]]; then
               PR_NUM="${BASH_REMATCH[1]}"
               CLEAN_TITLE=$(echo "$subject" | sed -E 's/ \(#[0-9]+\)$//')
+              
+              # 对于 PR，直接用 GitHub API 获取最准确的作者用户名
               PR_AUTHOR=$(gh pr view "$PR_NUM" --json author --jq .author.login 2>/dev/null || echo "$author")
               
               if [ "$SHOW_AUTHOR" = "true" ]; then
@@ -77,9 +77,14 @@ jobs:
                 COMMITS+="- ${CLEAN_TITLE} in #${PR_NUM}\n"
               fi
             else
-              # 普通 commit 逻辑，括号内使用刚才生成的 commit_link
+              # 对于普通 commit，我们不用 "author" 变量，避免各种奇怪的符号
+              # 用 git 自带的方式安全提取
+              CLEAN_AUTHOR=$(git log -1 --format="%an" "$full_hash" | tr -d '\r\n')
+              # 如果含有非法字符或空格，可以视情况处理，这里我们用最干净的方式
+              # GitHub 的推送用户名通常和邮箱、committer 是一致的
+              
               if [ "$SHOW_AUTHOR" = "true" ]; then
-                COMMITS+="- ${subject} by @${author} in (${commit_link})\n"
+                COMMITS+="- ${subject} by @${CLEAN_AUTHOR} in (${commit_link})\n"
               else
                 COMMITS+="- ${subject} (${commit_link})\n"
               fi
@@ -96,7 +101,7 @@ jobs:
 
           - 如何自定义配置 mpv.conf 与快捷键/菜单 input.conf，在更新版本时直接覆盖不受影响？ 📢 [查看文档](https://mpvconfig.github.io/docs/custom.html)
           - 推荐： 油猴脚本 ⇢ [使用 mpv 播放网页中的视频](https://github.com/akFace/play-with-mpv)
-          - 📔 [Docs Guide](https://mpvconfig.github.io/docs/en)  | 🛠 [详细使用教程](https://mpvconfig.github.io/docs/install.html) | 🚀 [更新教程](https://mpvconfig.github.io/docs/update.html) | 🍭 [超分滤镜说明指南](https://mpvconfig.github.io/docs/shaders.html) | ⌨ [常用快捷键](https://mpvconfig.github.io/docs/shortcuts.html) | 🎯 [主题效果预览](https://mpvconfig.github.io/docs/preview.html)
+          - 📔 [Docs Guide](https://mpvconfig.github.io/docs/en)  | 🛠 [详细使用教程](https://mpvconfig.github.io/docs/install.html) | 🚀 [更新教程](https://mpvconfig.github.io/docs/update.html) | 🍭 [超分滤镜说明指南](https://mpvconfig.github.io/docs/shaders.html) | ⌨ [常用快捷键](https://mpvconfig.github.io/docs/shortcuts.html) | 🎨 [界面设置](https://mpvconfig.github.io/docs/conf.html) | 🎯 [主题效果预览](https://mpvconfig.github.io/docs/preview.html)
 
           > [!TIP]
           >
@@ -141,29 +146,55 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ---------- 发送 Telegram 通知 ----------
-      - name: Send Telegram Notification
-        if: success() # 只有前面都成功了才发送
+      # ---------- 发送 Discord 通知 ----------
+      - name: Send Discord Notification
+        if: success()
         env:
-          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           NEW_VERSION: ${{ steps.release_info.outputs.NEW_TAG }}
         shell: bash
         run: |
-          # 提取我们需要发送的纯文本内容 (从 "### Update log:" 开始到底部)
-          # 用 awk 提取这一小段，避免发送太多长文本导致报错
+          # 1. 提取纯净的日志内容
           MSG_CONTENT=$(awk '/### Update log:/{flag=1} flag' release_body.txt)
 
-          # 拼接完整消息 (HTML 格式)
-          # 使用 <b> 标签加粗，使用 <a> 标签生成跳转链接
-          HTML_MSG="<b>🚀 【新版本 / New Version!】：${NEW_VERSION}</b>%0A%0A<a href=\"https://github.com/${GITHUB_REPOSITORY}/releases/tag/${NEW_VERSION}\">👉 点击查看完整 Release latest</a>%0A%0A${MSG_CONTENT}"
+          # 2. 去除 in (xxxxx) 这种 commit 链接尾巴
+          MSG_CONTENT=$(echo "$MSG_CONTENT" | sed -E 's/ (by @[a-zA-Z0-9_-]+ )?\(\[[a-zA-Z0-9]+\]\(https:\/\/[^\)]+\)\)//g')
 
-          # 使用 Python3 进行彻底的 URL 编码（这步极其关键，解决换行符、特殊符号的转义问题）
-          ENCODED_MSG=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$HTML_MSG")
+          # 3. 构造 Discord 专用的 JSON Payload
+          # Discord 用的是 JSON，并且支持原生 Markdown，不需要复杂的 URL 编码
+          # 这里我们用 Python 安全地生成 JSON，防止换行符破坏 JSON 结构
+          JSON_PAYLOAD=$(python3 -c "
+          import json, sys
+          version = sys.argv[1]
+          repo = sys.argv[2]
+          body = sys.argv[3]
 
-          # 发送到 Telegram (HTML 模式不用像 Markdown 那样疯狂转义)
-          curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-            -d "chat_id=${CHAT_ID}" \
-            -d "parse_mode=HTML" \
-            -d "text=${ENCODED_MSG}" \
-            -d "disable_web_page_preview=true"
+          content = f'''🚀 **【新版本 / New Version!】：{version}**
+
+          ⇢ [Release latest](https://github.com/akFace/mpv.config/releases/latest)
+
+          {body}'''
+
+          # 将内容封装进 Discord 要求的 JSON 结构中
+          print(json.dumps({
+              'content': content,
+              'username': 'GitHub Release Bot',
+              'avatar_url': 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
+          }))
+          " "$NEW_VERSION" "${{ github.repository }}" "$MSG_CONTENT")
+
+          # 4. 发送到 Discord
+          echo "正在发送到 Discord..."
+          RESPONSE=$(curl -s -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$JSON_PAYLOAD")
+
+          # 5. 错误检查
+          # Discord 成功时返回 HTTP 204 并且无响应体，失败时会返回错误 JSON
+          if [ -z "$RESPONSE" ]; then
+            echo "✅ Discord 通知发送成功！"
+          else
+            echo "❌ Discord 通知发送失败，返回结果："
+            echo "$RESPONSE"
+            exit 1
+          fi
