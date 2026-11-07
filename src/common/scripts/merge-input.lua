@@ -57,20 +57,22 @@ local STR = {
         merge_failed_read_main   = "Merge failed: cannot read input.conf (%s)",
         merge_failed_read_extra  = "Merge failed: cannot read custom-input.conf (%s)",
         merge_failed_write_main  = "Merge failed: cannot write input.conf (%s)",
-        merge_done               = "Merge done: %d key(s) overwritten, %d key(s) added, %d menu item(s) removed. Backup saved as %s",
-        merge_done_no_backup     = "Merge done: %d key(s) overwritten, %d key(s) added, %d menu item(s) removed.",
+        merge_done               = "Merge done: %d key(s) overwritten, %d key(s) added, %d menu item(s) changed, %d menu item(s) removed. Backup saved as %s",
+        merge_done_no_backup     = "Merge done: %d key(s) overwritten, %d key(s) added, %d menu item(s) changed, %d menu item(s) removed.",
         overwritten_keys         = "Overwritten keys: ",
         added_keys               = "Added keys: ",
+        changed_menus            = "Changed menu items: ",
         script_loaded            = "merge-input.lua loaded. Press Ctrl+Shift+M to merge custom-input.conf into input.conf",
     },
     zh = {
         merge_failed_read_main   = "合并失败：无法读取 input.conf (%s)",
         merge_failed_read_extra  = "合并失败：无法读取 custom-input.conf (%s)",
         merge_failed_write_main  = "合并失败：无法写入 input.conf (%s)",
-        merge_done               = "合并完成：覆盖 %d 个键，新增 %d 个键，移除 %d 个菜单项。备份已保存为 %s",
-        merge_done_no_backup     = "合并完成：覆盖 %d 个键，新增 %d 个键，移除 %d 个菜单项。",
+        merge_done               = "合并完成：覆盖 %d 个键，新增 %d 个键，变更 %d 个菜单项，移除 %d 个菜单项。备份已保存为 %s",
+        merge_done_no_backup     = "合并完成：覆盖 %d 个键，新增 %d 个键，变更 %d 个菜单项，移除 %d 个菜单项。",
         overwritten_keys         = "覆盖的键：",
         added_keys               = "新增的键：",
+        changed_menus            = "变更的菜单项：",
         script_loaded            = "merge-input.lua 已加载，按 Ctrl+Shift+M 合并 custom-input.conf 到 input.conf",
     },
 }
@@ -120,12 +122,32 @@ local function normalize_line(line)
     return (line:match("^%s*(.-)%s*$")) or ""
 end
 
-local function get_menu_path(lines)
+local function is_menu_separator(line)
+    local trimmed = normalize_line(line)
+    if trimmed == "" then
+        return false
+    end
+
+    local menu_path = trimmed:match("#menu:%s*(.-)%s*$")
+    if menu_path then
+        menu_path = menu_path:gsub("%s*#@.*$", "")
+        menu_path = normalize_line(menu_path)
+        return menu_path:sub(-1) == "-"
+    end
+
+    return false
+end
+
+local function get_menu_path(lines, ignore_separator_lines)
     for _, line in ipairs(lines) do
-        local path = line:match("#menu:%s*(.-)%s*$")
-        if path then
-            path = path:gsub("%s*#@.*$", "")
-            return normalize_line(path)
+        if ignore_separator_lines and is_menu_separator(line) then
+            -- 自定义文件中的分隔线不作为菜单项参与匹配
+        else
+            local path = line:match("#menu:%s*(.-)%s*$")
+            if path then
+                path = path:gsub("%s*#@.*$", "")
+                return normalize_line(path)
+            end
         end
     end
     return nil
@@ -215,44 +237,52 @@ local function merge_inputs(skip_backup)
     local main_lines  = split_lines(main_content)
     local extra_lines = split_lines(extra_content)
 
-    -- 解析 custom-input.conf
-    --   extra_blocks     普通键：key -> block
-    --   extra_underscore `_` 键：有序的 block 列表
-    --   order            普通键第一次出现的顺序
-    local extra_blocks     = {}
-    local extra_underscore = {}
-    local menu_removals    = {}
-    local order = {}
-    local current_key   = nil
-    local current_block = nil
+    local function parse_custom_blocks(lines)
+        local extra_blocks = {}
+        local extra_sequence = {}
+        local extra_key_slot = {}
+        local menu_removals = {}
+        local current_key = nil
+        local current_block = nil
 
-    for _, line in ipairs(extra_lines) do
-        local remove_path = line:match("#rm_menu:%s*(.-)%s*$")
-        if remove_path ~= nil then
-            remove_path = normalize_line(remove_path:gsub("%s*#@.*$", ""))
-            if remove_path ~= "" then
-                menu_removals[remove_path] = true
-            end
-            current_key = nil
-            current_block = nil
-        else
-            local key = parse_key(line)
-            if key then
-                current_key = key
-                current_block = { lines = { line } }
-                if key == "_" then
-                    extra_underscore[#extra_underscore + 1] = current_block
-                else
-                    if not extra_blocks[key] then
-                        order[#order + 1] = key
-                    end
-                    extra_blocks[key] = current_block
+        for _, line in ipairs(lines) do
+            local remove_path = line:match("#rm_menu:%s*(.-)%s*$")
+            if remove_path ~= nil then
+                remove_path = normalize_line(remove_path:gsub("%s*#@.*$", ""))
+                if remove_path ~= "" then
+                    menu_removals[remove_path] = true
                 end
-            elseif current_key then
-                current_block.lines[#current_block.lines + 1] = line
+                current_key = nil
+                current_block = nil
+            else
+                local key = parse_key(line)
+                if key then
+                    current_key = key
+                    current_block = { lines = { line } }
+                    if key == "_" then
+                        extra_sequence[#extra_sequence + 1] = current_block
+                    else
+                        if extra_blocks[key] then
+                            extra_sequence[extra_key_slot[key]] = current_block
+                        else
+                            extra_key_slot[key] = #extra_sequence + 1
+                            extra_sequence[#extra_sequence + 1] = current_block
+                        end
+                        extra_blocks[key] = current_block
+                    end
+                elseif current_key then
+                    current_block.lines[#current_block.lines + 1] = line
+                end
             end
         end
+
+        return extra_blocks, extra_sequence, menu_removals
     end
+
+    -- 解析 custom-input.conf
+    --   extra_blocks   普通键：key -> 最新 block
+    --   extra_sequence 按原始出现顺序保存所有 block
+    local extra_blocks, extra_sequence, menu_removals = parse_custom_blocks(extra_lines)
 
     local function is_removed_menu_block(lines)
         local path = get_menu_path(lines)
@@ -274,12 +304,64 @@ local function merge_inputs(skip_backup)
         return block
     end
 
+    local function append_lines(block, output)
+        for _, line in ipairs(block) do
+            output[#output + 1] = line
+        end
+    end
+
+    local function same_block_content(a, b)
+        if not a or not b or #a ~= #b then
+            return false
+        end
+        for i = 1, #a do
+            if a[i] ~= b[i] then
+                return false
+            end
+        end
+        return true
+    end
+
     local function append_commented_block(block, output)
         if #block == 0 then return end
         output[#output + 1] = "# " .. block[1]
         for i = 2, #block do
             output[#output + 1] = block[i]
         end
+    end
+
+    -- 按优先级处理：
+    -- 1. 删除规则
+    -- 2. 完整内容相同：直接保留主文件原内容
+    -- 3. 同菜单路径：替换旧菜单项
+    -- 4. 同键覆盖：替换旧键绑定
+    -- 5. 追加新增项
+    local function find_same_content_custom_block(block)
+        local block_lines = block.lines or block
+        for _, custom_block in ipairs(extra_sequence) do
+            if custom_block ~= block and same_block_content(block_lines, custom_block.lines) then
+                return custom_block
+            end
+        end
+        return nil
+    end
+
+    local function find_matching_custom_menu(block)
+        local menu_path = get_menu_path(block.lines or block)
+        if not menu_path then
+            return nil
+        end
+
+        for _, custom_block in ipairs(extra_sequence) do
+            if custom_block ~= block then
+                local custom_path = get_menu_path(custom_block.lines, true)
+                if custom_path and custom_path == menu_path then
+                    return custom_block
+                end
+            end
+        end
+
+        return nil
     end
 
     -- 收集主文件里已有的普通键，以及 `_` 行的完整内容集合
@@ -308,9 +390,11 @@ local function merge_inputs(skip_backup)
     local replaced_keys = {}
     local added_keys = {}
     local added_underscore = {}
+    local changed_menus = 0
     local removed_menus = 0
+    local placed_custom = {}
 
-    -- 1) 复制主文件；普通键被 custom 覆盖；`_` 行原样保留；匹配删除规则的菜单块会被移除
+    -- 1) 复制主文件；优先级：删除规则 -> 完整内容相同 -> 菜单路径替换 -> 同键覆盖 -> `_` 原样保留
     i = 1
     while i <= #main_lines do
         local key = parse_key(main_lines[i])
@@ -320,23 +404,42 @@ local function merge_inputs(skip_backup)
                 j = j + 1
             end
             local block = get_block(main_lines, i, j - 1)
+            local main_menu_path = get_menu_path(block)
+            local same_content_match = find_same_content_custom_block({ lines = block })
+            local custom_menu_match = main_menu_path and find_matching_custom_menu({ lines = block })
+
             if is_removed_menu_block(block) then
+                -- 1. 删除规则：主文件中的旧菜单项被注释掉并计数
                 append_commented_block(block, result)
                 removed_menus = removed_menus + 1
+            elseif same_content_match then
+                -- 2. 完整内容相同：不执行替换，保留主文件原内容
+                append_lines(block, result)
+                placed_custom[same_content_match] = true
+            elseif custom_menu_match then
+                -- 3. 菜单路径匹配：用 custom 的菜单项替换旧菜单块
+                if is_removed_menu_block(custom_menu_match.lines) then
+                    append_commented_block(block, result)
+                    removed_menus = removed_menus + 1
+                else
+                    append_lines(custom_menu_match.lines, result)
+                    placed_custom[custom_menu_match] = true
+                    changed_menus = changed_menus + 1
+                end
             elseif key ~= "_" and extra_blocks[key] then
+                -- 4. 同键覆盖：普通按键被 custom 的新定义覆盖
                 if is_removed_menu_block(extra_blocks[key].lines) then
                     append_commented_block(block, result)
                     removed_menus = removed_menus + 1
                 else
-                    if main_key_lines[key] and get_menu_path(block) ~= nil then
+                    if main_key_lines[key] and main_menu_path ~= nil then
                         append_commented_block(block, result)
                     end
                     replaced_keys[#replaced_keys + 1] = key
                 end
             else
-                for _, line in ipairs(block) do
-                    result[#result + 1] = line
-                end
+                -- 5. 其他情况保留原块；`_` 行原样保留，不重复追加
+                append_lines(block, result)
             end
             i = j
         else
@@ -345,28 +448,34 @@ local function merge_inputs(skip_backup)
         end
     end
 
-    -- 2) 追加 custom 里主文件没有的普通键
-    for _, key in ipairs(order) do
-        if not is_removed_menu_block(extra_blocks[key].lines) then
-            for _, l in ipairs(extra_blocks[key].lines) do
-                result[#result + 1] = l
-            end
-            if not main_key_lines[key] then
-                added_keys[#added_keys + 1] = key
-            end
-        end
-    end
+    -- 2) 按 custom 文件中的原始顺序追加块：
+    --    自定义菜单项不受 #rm_menu 规则影响（它们不会被移除），
+    --    仅主文件中的旧菜单项会在第 1 步被删除。
+    for _, block in ipairs(extra_sequence) do
+        if placed_custom[block] then
+            -- 已在主文件中按位置替换或覆盖，避免重复追加
+        else
+            local first_line = block.lines[1] or ""
+            local key = parse_key(first_line)
 
-    -- 3) 追加 custom 里的 `_` 块：按内容去重
-    for _, block in ipairs(extra_underscore) do
-        local first_line = normalize_line(block.lines[1] or "")
-        if not is_removed_menu_block(block.lines) and not main_underscore_set[first_line] then
-            for _, l in ipairs(block.lines) do
-                result[#result + 1] = l
+            if key == "_" then
+                local normalized = normalize_line(first_line)
+                if not main_underscore_set[normalized] then
+                    append_lines(block.lines, result)
+                    added_underscore[#added_underscore + 1] = normalized
+                    main_underscore_set[normalized] = true
+                    if get_menu_path(block.lines) then
+                        changed_menus = changed_menus + 1
+                    end
+                end
+            elseif key then
+                append_lines(block.lines, result)
+                if get_menu_path(block.lines) then
+                    changed_menus = changed_menus + 1
+                elseif not main_key_lines[key] then
+                    added_keys[#added_keys + 1] = key
+                end
             end
-            added_underscore[#added_underscore + 1] = first_line
-            -- 更新集合，避免 custom 内部自身重复
-            main_underscore_set[first_line] = true
         end
     end
 
@@ -381,9 +490,9 @@ local function merge_inputs(skip_backup)
 
     local done_text
     if skip_backup then
-        done_text = T("merge_done_no_backup", #replaced_keys, #added_keys, removed_menus)
+        done_text = T("merge_done_no_backup", #replaced_keys, #added_keys, changed_menus, removed_menus)
     else
-        done_text = T("merge_done", #replaced_keys, #added_keys, removed_menus, BACKUP_SUFFIX)
+        done_text = T("merge_done", #replaced_keys, #added_keys, changed_menus, removed_menus, BACKUP_SUFFIX)
     end
     mp.osd_message(done_text, 4)
     msg.info(done_text)
@@ -392,6 +501,9 @@ local function merge_inputs(skip_backup)
     end
     if #added_keys > 0 then
         msg.info(T("added_keys") .. table.concat(added_keys, ", "))
+    end
+    if changed_menus > 0 then
+        msg.info(T("changed_menus") .. tostring(changed_menus))
     end
     if #added_underscore > 0 then
         msg.info("Added _ blocks: " .. #added_underscore)
