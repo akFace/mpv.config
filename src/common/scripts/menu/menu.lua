@@ -72,6 +72,7 @@ local o_defaults = {
     screen_margin = 11,
     min_width = 270,
     max_width = 1000,
+    flatten_menu = true, -- 是否平铺显示多级菜单；空间不足时自动压缩面板宽度
     max_visible_rows = 0,
     scroll_threshold = 0.80,
     sorting_loading_threshold = 140, -- 播放列表超过此条数才显示排序 loading
@@ -206,6 +207,7 @@ local sorting_spinner_glyphs = {
 }
 local selected_level, selected_index = 1, nil
 local anchor_x, anchor_y = nil, nil
+local flatten_direction = 'right' -- 菜单初始唤起方向：right 或 left
 local key_bindings = {}
 local scroll_offsets = {}
 local geometry_timer = nil
@@ -1007,9 +1009,18 @@ local function measure(list, ow, oh, level)
         for _,it in ipairs(list or {}) do
             if not is_hidden(it) and it.type ~= 'separator' then
                 local title, shortcut = split_title(it.title)
-                local w = text_width(title) + px*2 + child_indent
+                local title_w = text_width(title)
+                
+                local w = title_w + px*2 + child_indent
                 if state_has(it,'checked') then w = w + 20*scale end
-                if shortcut ~= '' then w = w + gap + text_width(shortcut) + sr_gap end
+                
+                if shortcut ~= '' then
+                    -- 【优化点】：如果存在右侧信息，优先保证标题至少有 160px（按缩放）的显示空间
+                    -- 如果标题本身小于这个值，则按实际宽度计算
+                    local min_title_w = math.max(title_w, 160 * scale) 
+                    w = min_title_w + px*2 + child_indent + gap + text_width(shortcut) + sr_gap
+                end
+                
                 if it.type == 'submenu' then w = w + arrow end
                 content_w = math.max(content_w, w)
             end
@@ -1336,20 +1347,41 @@ local function draw_menu(list,x,y,level,ow,oh,w,h,layout,scale,meta)
                     if shortcut ~= '' then shortcut_right_x = right_edge - shortcut_right_gap end
                 end
 
+                -- 【优化点】：重新分配标题和右侧信息的宽度
                 local display_shortcut = shortcut
                 local shortcut_display_w = 0
                 if shortcut ~= '' and shortcut_right_x then
-                    local shortcut_maxw = math.max(1, shortcut_right_x - left_x - o.shortcut_gap * scale)
-                    display_shortcut = truncate_text(shortcut, shortcut_maxw)
-                    shortcut_display_w = text_width(display_shortcut)
-                    right_edge = shortcut_right_x - shortcut_display_w - o.shortcut_gap * scale
+                    local title_w = text_width(title)
+                    local available_total_w = shortcut_right_x - left_x - o.shortcut_gap * scale
+                    
+                    -- 优先保证标题。如果标题长度超过可用空间的 60%，或者空间非常局促
+                    if title_w > available_total_w * 0.6 then
+                        -- 尝试给右侧信息留一点空间，如果连省略号都放不下，就直接隐藏右侧信息
+                        local max_shortcut_w = available_total_w - title_w
+                        if max_shortcut_w < text_width("...") then
+                            display_shortcut = "" 
+                            shortcut_right_x = nil
+                            right_edge = x + w - o.padding_x * scale - (meta.scrollable and (meta.scrollbar_width + meta.scrollbar_gap) or 0)
+                        else
+                            display_shortcut = truncate_text(shortcut, max_shortcut_w)
+                            shortcut_display_w = text_width(display_shortcut)
+                            right_edge = shortcut_right_x - shortcut_display_w - o.shortcut_gap * scale
+                        end
+                    else
+                        -- 空间充足，正常截断
+                        display_shortcut = truncate_text(shortcut, available_total_w - title_w)
+                        shortcut_display_w = text_width(display_shortcut)
+                        right_edge = shortcut_right_x - shortcut_display_w - o.shortcut_gap * scale
+                    end
                 end
 
                 local display_title=truncate_text(title,math.max(1,right_edge-left_x))
                 row_out[#row_out+1]=text_tag(left_x,text_y,display_title,c,fs,'4')
-                if display_shortcut ~= '' then
+                
+                if display_shortcut ~= '' and shortcut_right_x then
                     row_out[#row_out+1]=text_tag(shortcut_right_x,text_y,display_shortcut,disabled and o.disabled_text or (ih and o.hover_shortcut or o.shortcut),fs,'6')
                 end
+                
                 if it.type == 'submenu' then
                     local arrow_fs=current_arrow_font_size()
                     row_out[#row_out+1]=text_tag(arrow_center,text_y,o.arrow_char,ih and o.hover_arrow or o.submenu_arrow,arrow_fs,'5',nil,nil,ih and o.hover_arrow_alpha or o.arrow_alpha)
@@ -1479,7 +1511,7 @@ render = function()
         hover_level,hover_index=l,i
     elseif not l then
         hover_level,hover_index=nil,nil
-    hover_sort_level=nil
+        hover_sort_level=nil
     end
 
     rects={}
@@ -1490,44 +1522,211 @@ render = function()
         if normalize_menu(root) == 0 then clear(); return end
     end
 
-    local rw,rh,r_layout,r_scale,r_meta=measure(root,ow,oh,1)
-    local margin=o.screen_margin*r_scale
-    local x = anchor_x or (mx+2*r_scale)
-    local y = anchor_y or (my+2*r_scale)
+    -- 测量当前打开路径上的所有面板。
+    local panels = {}
+    local panel_count = #open_path + 1
+    local lists = { root }
 
-    if x+rw>ow-margin then x=(anchor_x and anchor_x-rw-2*r_scale) or (mx-rw-2*r_scale) end
-    if y+rh>oh-margin then y=(anchor_y and anchor_y-rh-2*r_scale) or (my-rh-2*r_scale) end
-    x=clamp(x,margin,ow-rw-margin)
-    y=clamp(y,margin,oh-rh-margin)
+    for level = 2, panel_count do
+        local parent_items = lists[level - 1] or {}
+        local parent_item = parent_items[open_path[level - 1]]
+        lists[level] = parent_item and parent_item.submenu or {}
+    end
 
-    local ass={}
-    ass[#ass+1]=draw_modal_mask(ow,oh)
-    ass[#ass+1]=draw_menu(root,x,y,1,ow,oh,rw,rh,r_layout,r_scale,r_meta)
+    for level = 1, panel_count do
+        local w, h, layout, scale, meta = measure(lists[level], ow, oh, level)
+        panels[level] = {
+            list = lists[level],
+            w = w,
+            h = h,
+            layout = layout,
+            scale = scale,
+            meta = meta
+        }
+    end
 
-    for level=2,#open_path+1 do
-        local parent=rects[level-1]
-        local pitems=menu_at(level-1)
-        local pidx=open_path[level-1]
-        local child=pitems[pidx] and pitems[pidx].submenu or {}
-        if parent and child then
-            local cw,ch,c_layout,c_scale,c_meta=measure(child,ow,oh,level)
-            local gap=o.submenu_gap*c_scale
-            local cx=parent.x+parent.w+gap
-            if cx+cw>ow-o.screen_margin*c_scale then cx=parent.x-cw-gap end
+    local margin = o.screen_margin * panels[1].scale
+    local rw, rh = panels[1].w, panels[1].h
+    local x = anchor_x or (mx + 2 * panels[1].scale)
+    local y = anchor_y or (my + 2 * panels[1].scale)
 
-            local pg=nil
-            for _,g in ipairs(parent.layout or {}) do if g.index==pidx then pg=g;break end end
-            local cy=pg and (parent.y+pg.y-(parent.scroll_offset or 0)) or parent.y+o.padding_y*c_scale
-            cy=clamp(cy,o.screen_margin*c_scale,oh-ch-o.screen_margin*c_scale)
-            ass[#ass+1]=draw_menu(child,cx,cy,level,ow,oh,cw,ch,c_layout,c_scale,c_meta)
+    local chain_width = 0
+    local gap_total = 0
+
+    for level, panel in ipairs(panels) do
+        chain_width = chain_width + panel.w
+
+        if level > 1 then
+            local gap = o.submenu_gap * panel.scale
+            chain_width = chain_width + gap
+            gap_total = gap_total + gap
         end
     end
 
-    local data = table.concat(ass,'\n')
+    if o.flatten_menu and panel_count > 1 then
+        -- 根菜单固定在唤起时的位置，不随子菜单开合而移动。
+        local available
+
+        if flatten_direction == 'left' then
+            -- 根菜单在右侧，子菜单向左展开。
+            available = x + rw - margin
+        else
+            -- 根菜单在左侧，子菜单向右展开。
+            available = ow - margin - x
+        end
+
+        available = math.max(1, available)
+
+        local overflow = chain_width - available
+
+        if overflow > 0 then
+            -- 第一优先级：优先压缩最后一级到 min_width。
+            local last = panels[panel_count]
+            local min_w = (tonumber(o.min_width) or 270) * last.scale
+
+            local reduction = math.min(
+                overflow,
+                math.max(0, last.w - min_w)
+            )
+
+            last.w = last.w - reduction
+            overflow = overflow - reduction
+
+            -- 第二优先级：所有层级平均压缩。
+            -- 极端情况下允许低于 min_width，但不低于 1px。
+            while overflow > 0.01 do
+                local active = 0
+
+                for _, panel in ipairs(panels) do
+                    if panel.w > 1 then
+                        active = active + 1
+                    end
+                end
+
+                if active == 0 then break end
+
+                local each = overflow / active
+                local reduced = 0
+
+                for _, panel in ipairs(panels) do
+                    if panel.w > 1 then
+                        local actual = math.min(each, panel.w - 1)
+                        panel.w = panel.w - actual
+                        reduced = reduced + actual
+                    end
+                end
+
+                if reduced < 0.01 then break end
+                overflow = overflow - reduced
+            end
+
+            -- 使用压缩后的实际宽度重新计算总宽度。
+            chain_width = gap_total
+
+            for _, panel in ipairs(panels) do
+                chain_width = chain_width + panel.w
+            end
+
+            rw = panels[1].w
+        end
+
+    elseif x + rw > ow - margin then
+        x = (anchor_x and anchor_x - rw - 2 * panels[1].scale)
+            or (mx - rw - 2 * panels[1].scale)
+    end
+
+    if y + rh > oh - margin then
+        y = (anchor_y and anchor_y - rh - 2 * panels[1].scale)
+            or (my - rh - 2 * panels[1].scale)
+    end
+
+    if not (o.flatten_menu and panel_count > 1) then
+        x = clamp(x, margin, math.max(margin, ow - rw - margin))
+    end
+
+    y = clamp(y, margin, math.max(margin, oh - rh - margin))
+
+    local ass = {}
+    ass[#ass + 1] = draw_modal_mask(ow, oh)
+
+    local root_panel = panels[1]
+
+    ass[#ass + 1] = draw_menu(
+        root_panel.list,
+        x, y, 1,
+        ow, oh,
+        root_panel.w, root_panel.h,
+        root_panel.layout,
+        root_panel.scale,
+        root_panel.meta
+    )
+
+    for level = 2, panel_count do
+        local parent = rects[level - 1]
+        local panel = panels[level]
+
+        if parent and panel then
+            local gap = o.submenu_gap * panel.scale
+            local cx
+
+            if o.flatten_menu then
+                if flatten_direction == 'left' then
+                    cx = parent.x - panel.w - gap
+                else
+                    cx = parent.x + parent.w + gap
+                end
+            else
+                cx = parent.x + parent.w + gap
+
+                if cx + panel.w > ow - o.screen_margin * panel.scale then
+                    cx = parent.x - panel.w - gap
+                end
+            end
+
+            local parent_index = open_path[level - 1]
+            local pg
+
+            for _, g in ipairs(parent.layout or {}) do
+                if g.index == parent_index then
+                    pg = g
+                    break
+                end
+            end
+
+            local cy = pg and
+                (parent.y + pg.y - (parent.scroll_offset or 0))
+                or parent.y + o.padding_y * panel.scale
+
+            cy = clamp(
+                cy,
+                o.screen_margin * panel.scale,
+                math.max(
+                    o.screen_margin * panel.scale,
+                    oh - panel.h - o.screen_margin * panel.scale
+                )
+            )
+
+            ass[#ass + 1] = draw_menu(
+                panel.list,
+                cx, cy, level,
+                ow, oh,
+                panel.w, panel.h,
+                panel.layout,
+                panel.scale,
+                panel.meta
+            )
+        end
+    end
+
+    local data = table.concat(ass, '\n')
     local overlay_changed = set_overlay_data(data, ow, oh)
+
     menu_glass_install()
     menu_glass_update()
-    if overlay_changed then overlay:update() end
+
+    if overlay_changed then
+        overlay:update()
+    end
 end
 
 
@@ -1901,45 +2100,95 @@ schedule_hover_open = function(l, i)
     return open_hover_now(l, i)
 end
 
-local function show(attempt)
-    attempt = attempt or 1
-    pcall(mp.commandv,'script-message','menu-refresh-dynamic')
+local function display_menu()
+    local mx,my=get_mouse()
+    anchor_y=(my or 0)+2
 
-    if show_timer then show_timer:kill(); show_timer=nil end
+    local sow, soh = get_osd()
+
+    -- 只在唤起时判断一次方向。
+    flatten_direction =
+        (o.flatten_menu and sow and mx and mx > sow / 2)
+        and 'left' or 'right'
+
+    -- 唤起时固定根菜单坐标，鼠标悬停时不再重新计算。
+    if sow and soh and o.flatten_menu then
+        local root_w = measure(items, sow, soh, 1)
+        local margin = o.screen_margin * ui_scale()
+
+        if flatten_direction == 'left' then
+            anchor_x = (mx or 0) - root_w - 2
+        else
+            anchor_x = (mx or 0) + 2
+        end
+
+        anchor_x = clamp(
+            anchor_x,
+            margin,
+            math.max(margin, sow - root_w - margin)
+        )
+    else
+        anchor_x = (mx or 0) + 2
+    end
+
+    visible=true
+    set_osc_visibility(false)
+
+    open_path={}
+    scroll_offsets={}
+    rects={}
+
+    hover_level,hover_index=nil,nil
+    hover_sort_level=nil
+
+    selected_level=1
+    selected_index=first_selectable(items)
+
+    if sow and soh then
+        last_osd_w,last_osd_h=sow,soh
+        prepare_initial_playlist_scrolls(items, sow, soh, 1)
+    end
+
+    setup_bindings()
+    render()
+
+    if geometry_timer then
+        geometry_timer:kill()
+    end
+
+    geometry_timer=nil
+end
+
+local function schedule_show_retry(attempt)
     local delay = (attempt == 1) and 0.03 or 0.05
     show_timer = mp.add_timeout(delay, function()
         show_timer = nil
         refresh_menu_snapshot()
 
         local ready = type(items)=='table' and #items>0 and first_selectable(items) ~= nil
-        if not ready then
-            if attempt < 6 then show(attempt + 1)
-            else msg.warn('menu data is empty') end
-            return
+        if ready then
+            display_menu()
+        elseif attempt < 6 then
+            schedule_show_retry(attempt + 1)
+        else
+            msg.warn('menu data is empty')
         end
-
-        local mx,my=get_mouse()
-        anchor_x,anchor_y=(mx or 0)+2,(my or 0)+2
-        visible=true
-        set_osc_visibility(false)
-        open_path={}
-        scroll_offsets={}
-        rects={}
-        hover_level,hover_index=nil,nil
-        hover_sort_level=nil
-        selected_level=1
-        selected_index=first_selectable(items)
-        local sow, soh = get_osd()
-
-        if sow and soh then
-            last_osd_w,last_osd_h=sow,soh
-            prepare_initial_playlist_scrolls(items, sow, soh, 1)
-        end
-        setup_bindings()
-        render()
-        if geometry_timer then geometry_timer:kill() end
-        geometry_timer=nil
     end)
+end
+
+local function show()
+    if show_timer then show_timer:kill(); show_timer=nil end
+
+    -- 先立即读取一次动态菜单快照；数据已就绪时直接显示，避免固定等待 30ms。
+    local snapshot_ok = refresh_menu_snapshot()
+    local ready = snapshot_ok and type(items)=='table' and #items>0 and first_selectable(items) ~= nil
+    if ready then
+        display_menu()
+        return
+    end
+
+    -- 数据尚未就绪时，沿用原有 30ms 首次等待及 50ms 间隔重试兜底。
+    schedule_show_retry(1)
 end
 
 mp.register_script_message('show',show)
