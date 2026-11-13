@@ -178,7 +178,7 @@ jobs:
           # 将内容封装进 Discord 要求的 JSON 结构中
           print(json.dumps({
               'content': content,
-              'username': 'GitHub Release Bot',
+              'username': 'GitHub Bot',
               'avatar_url': 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
           }))
           " "$NEW_VERSION" "${{ github.repository }}" "$MSG_CONTENT")

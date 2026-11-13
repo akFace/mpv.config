@@ -2462,7 +2462,11 @@ local function open_windows_primary(multi, folder, save, default_name, src)
             '}'
         }, '\n')
     elseif save then
-        local name = tostring(default_name or 'file'):gsub('\\', '\\\\'):gsub('"', '\\"')
+        -- Clear special symbols
+        local name = tostring(default_name or 'file'):gsub('["\']', ''):gsub('%.+$', '')
+        local timestamp = os.date("_%Y%m%d_%H%M%S")
+        name = name .. timestamp
+        name = name:gsub('\\', '\\\\')
         script = table.concat({
             '& {',
             '    Trap { Write-Error -ErrorRecord $_; Exit 1 }',
@@ -2470,6 +2474,9 @@ local function open_windows_primary(multi, folder, save, default_name, src)
             '    $u8 = [System.Text.Encoding]::UTF8',
             '    $out = [Console]::OpenStandardOutput()',
             '    $sfd = New-Object -TypeName Microsoft.Win32.SaveFileDialog',
+            '    $sfd.Filter = "JPEG Image (*.jpg)|*.jpg|PNG Image (*.png)|*.png|WebP Image (*.webp)|*.webp"',
+            '    $sfd.DefaultExt = "jpg"',
+            '    $sfd.AddExtension = $true',
             '    $sfd.FileName = "' .. name .. '"',
             '    If ($sfd.ShowDialog() -eq $true) {',
             '        $u8filename = $u8.GetBytes("$($sfd.FileName)`n")',
