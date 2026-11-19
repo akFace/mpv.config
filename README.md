@@ -46,6 +46,7 @@
 - 可视化调节 eq 均衡器、声道切换、自动 HDR、解码切换、调色等常用功能
 - 实时切换主题配色
 - 自动跳过片头片尾
+- 音乐可视化频谱
 - Windows、macOS、Linux 全平台一致的强大右键菜单功能
 - 轻量级，超简单，只需简单几步骤即可完成享用
 
@@ -72,6 +73,10 @@
 > 切换主题配色方法：播放器内右键 > 工具 > 主题 选择对应的名称即可
 
 ![image](./docs/images/preview.gif)
+
+### 音乐可视化频谱
+
+![image](./docs/images/visualizer.gif)
 
 🍭 更多特性： [https://mpvconfig.github.io](https://mpvConfig.github.io/)
 

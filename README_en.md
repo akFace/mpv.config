@@ -39,6 +39,7 @@
 - **Visual Audio & Video Controls** — Easily adjust the EQ, switch audio channels and decoding methods, enable automatic HDR, and fine-tune colors.
 - **Live Theme Customization** — Switch theme color schemes on the fly.
 - **Automatic Intro & Outro Skipping** — Skip video intros and outros automatically.
+- **Audio Visualizer** — Visualize audio in real time.
 - **Cross-Platform Menus** — Consistent, feature-rich right-click menus on Windows, macOS, and Linux.
 - **Lightweight & Easy to Set Up** — Get started in just a few simple steps.
 
@@ -56,6 +57,10 @@
 ![image](./docs/images/Snipaste_2026-09-02_22-31-00.jpg)
 **uosc** ⇣
 ![image](./docs/images/Snipaste_2026-08-24_03-00-53.jpg)
+
+### Audio Visualizer
+
+![image](./docs/images/visualizer.gif)
 
 ## Open-source-project
 
