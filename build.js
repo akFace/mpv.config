@@ -21,18 +21,18 @@ const INPUT_CONFIGS = [
   {
     suffix: "zh",
     file: "input.conf",
-    mpvConf: `script-opts=modernz-language="zh",uosc-languages="zh-hans",uosc-controls="play-pause,menu,gap,subtitles,<has_many_audio>audio,<has_many_video>video,<has_many_edition>editions,<stream>stream-quality,button:danmaku,button:danmaku_menu,cycle:toggle_on:show_danmaku@uosc_danmaku:on=toggle_on/off=toggle_off?弹幕开关,gap,space,speed,space,shuffle,loop-playlist,loop-file,toggle:push_pin:ontop,gap,prev,items,next,gap,fullscreen"`,
+    mpvConf: `script-opts=logo-language="zh",modernz-language="zh",uosc-languages="zh-hans",uosc-controls="play-pause,menu,gap,subtitles,<has_many_audio>audio,<has_many_video>video,<has_many_edition>editions,<stream>stream-quality,button:danmaku,button:danmaku_menu,cycle:toggle_on:show_danmaku@uosc_danmaku:on=toggle_on/off=toggle_off?弹幕开关,gap,space,speed,space,shuffle,loop-playlist,loop-file,toggle:push_pin:ontop,gap,prev,items,next,gap,fullscreen"`,
   },
   {
     suffix: "zh-TW",
     file: "input_zh-TW.conf",
-    mpvConf: `script-opts=modernz-language="zh-TW",uosc-languages="zh-TW",uosc-controls="play-pause,menu,gap,subtitles,<has_many_audio>audio,<has_many_video>video,<has_many_edition>editions,<stream>stream-quality,button:danmaku,button:danmaku_menu,cycle:toggle_on:show_danmaku@uosc_danmaku:on=toggle_on/off=toggle_off?彈幕開關,gap,space,speed,space,shuffle,loop-playlist,loop-file,toggle:push_pin:ontop,gap,prev,items,next,gap,fullscreen"`,
+    mpvConf: `script-opts=logo-language="zh-TW",modernz-language="zh-TW",uosc-languages="zh-TW",uosc-controls="play-pause,menu,gap,subtitles,<has_many_audio>audio,<has_many_video>video,<has_many_edition>editions,<stream>stream-quality,button:danmaku,button:danmaku_menu,cycle:toggle_on:show_danmaku@uosc_danmaku:on=toggle_on/off=toggle_off?彈幕開關,gap,space,speed,space,shuffle,loop-playlist,loop-file,toggle:push_pin:ontop,gap,prev,items,next,gap,fullscreen"`,
   },
   // 英文版
   {
     suffix: "en",
     file: "input_en.conf",
-    mpvConf: `script-opts=modernz-language=en,uosc-languages=en`,
+    mpvConf: `script-opts=logo-language="en",modernz-language=en,uosc-languages=en`,
   },
   // 按需继续添加，例如：
   // {
@@ -91,7 +91,7 @@ async function build() {
 
   if (!(await fs.pathExists(BASE_SRC))) {
     console.error(
-      `❌ 源目录 "${BASE_SRC}" 不存在！请确保所有源文件已放入 src/ 目录。`
+      `❌ 源目录 "${BASE_SRC}" 不存在！请确保所有源文件已放入 src/ 目录。`,
     );
     process.exit(1);
   }
@@ -171,7 +171,7 @@ async function build() {
         // 5. 写入 config-version
         await fs.writeFile(
           path.join(tempDir, "config-version"),
-          version + "\n"
+          version + "\n",
         );
 
         // 6. 打包

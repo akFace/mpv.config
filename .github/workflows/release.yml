@@ -179,7 +179,8 @@ jobs:
           print(json.dumps({
               'content': content,
               'username': 'GitHub Bot',
-              'avatar_url': 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
+              'avatar_url': 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
+              'thread_name': f'🚀 新版本 / New Version {version}'
           }))
           " "$NEW_VERSION" "${{ github.repository }}" "$MSG_CONTENT")
 
