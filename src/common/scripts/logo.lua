@@ -156,7 +156,7 @@ local function render_logo()
         return
     end
 
-    local display_h = 325
+    local display_h = 310
     local display_w = display_h * aspect
 
     -- 与 osc.lua 原版 Logo 尺寸及居中计算一致
@@ -261,7 +261,7 @@ local function render_logo()
     local text_y = icon_y + logo_size + 30
     ass:new_event()
     ass:append(
-        string.format("{\\rDefault\\an5\\pos(%f,%f)\\fs22\\c&HFFFFFF&\\bord0\\shad0}", display_w / 2, text_y) ..
+        string.format("{\\rDefault\\an5\\pos(%f,%f)\\fs18\\c&HFFFFFF&\\bord0\\shad0}", display_w / 2, text_y) ..
         get_idle_text()
     )
 

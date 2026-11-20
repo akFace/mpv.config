@@ -331,7 +331,7 @@ local function draw_avectorscope_original()
     local artist_h = artist_size * 1.2 * artist_lines
     local meta_h   = artist_size * 1.2
 
-    local spacing  = diameter * 0.045
+    local spacing  = diameter * 0.06
     local total_h  = title_h + spacing + artist_h + spacing + meta_h
     local base_y   = cy - total_h / 2
 
@@ -351,7 +351,7 @@ local function draw_avectorscope_original()
     local total_w = fmt_w + info_w
     
     local start_x = cx - total_w / 2 + 10
-    local fmt_center = start_x + fmt_w / 2 - 5
+    local fmt_center = start_x + fmt_w / 2 - 10
     local info_center = start_x + fmt_w + info_w / 2
     local fw, fh, rad = fmt_w + artist_size*0.8, artist_size * 1.2, artist_size
 
@@ -387,7 +387,7 @@ end
 
 local function arc_text(ass, str, fs, rad, cx, cy, color)
     local chars = utf8_chars(str)
-    local spacing = fs * 0.10
+    local spacing = fs * 0.02
     local limit = rad * math.rad(275)
     local function width(list)
         local n = 0
@@ -451,7 +451,7 @@ local function draw_avectorscope_cd()
     draw_circle(da, cx, cy, r * .94, "000000", 0xB0)
     draw_circle(da, cx, cy, r * .88, "000000", 0x80)
     draw_circle(da, cx, cy, r * .68, "000000", 0xA8)
-    draw_circle(da, cx, cy, r * .42, "1D1D1D", 0xA0)
+    draw_circle(da, cx, cy, r * .42, "666666", 0xA0)
     draw_circle(da, cx, cy, r * .255, "414141", 0x70)
     draw_circle(da, cx, cy, r * .235, "252525", 0x00)
     draw_circle(da, cx, cy, r * .185, "383838", 0x80)
@@ -482,7 +482,7 @@ local function draw_avectorscope_cd()
     local total_w = fmt_w + info_w
     
     local start_x = cx - total_w / 2 + 10
-    local fmt_center = start_x + fmt_w / 2 - 5
+    local fmt_center = start_x + fmt_w / 2 - 10
     local info_center = start_x + fmt_w + info_w / 2
 
     local fw, fh, rad = fmt_w + meta_fs * 0.8, meta_fs * 1.2, meta_fs
