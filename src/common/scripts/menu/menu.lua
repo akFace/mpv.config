@@ -1667,7 +1667,7 @@ render = function()
 
         if parent and panel then
             local gap = o.submenu_gap * panel.scale
-            local cx
+            local cx, margin
 
             if o.flatten_menu then
                 if flatten_direction == 'left' then
@@ -1677,9 +1677,13 @@ render = function()
                 end
             else
                 cx = parent.x + parent.w + gap
+                margin = o.screen_margin * panel.scale
 
-                if cx + panel.w > ow - o.screen_margin * panel.scale then
+                if cx + panel.w > ow - margin and cx > ow - parent.x then
                     cx = parent.x - panel.w - gap
+                    panel.w = math.min(panel.w, parent.x - gap - margin)
+                else
+                    panel.w = math.min(panel.w, ow - cx - margin)
                 end
             end
 
