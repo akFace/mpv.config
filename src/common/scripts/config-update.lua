@@ -189,7 +189,7 @@ local function check_update()
             end)
         end
     elseif cmp == 0 then
-        osd("已是最新版本：" .. latest, 4)
+        osd("已是最新版本 Already latest：" .. latest, 4)
     else
         osd("当前版本 Version: " .. current .. "\n最新版本 Latest: " .. latest, 5)
     end

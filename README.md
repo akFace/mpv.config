@@ -85,6 +85,7 @@
 See also:
 
 - [equalizer-gui](https://github.com/akFace/equalizer-gui)
+- [mpv-visualizer](https://github.com/mpvConfig/mpv-visualizer)
 - [mpv-menu-plugin-next](https://github.com/mpvConfig/mpv-menu-plugin-next)
 - [switch-opts](./src/common/scripts/switch-opts.lua)
 - [interp_switch](./src/common/scripts/interp_switch.lua)

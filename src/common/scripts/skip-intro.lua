@@ -11,6 +11,7 @@
 -- _ script-message-to skip_intro show-marks           #menu: 标记 > 显示标记
 -- _ script-message-to skip_intro toggle-auto-start    #menu: 标记 > 自动跳过片头 #@state=(ud_skip_intro_auto_skip_start and 'checked')
 -- _ script-message-to skip_intro toggle-auto-end      #menu: 标记 > 自动跳过片尾 #@state=(ud_skip_intro_auto_skip_end and 'checked')
+-- _ script-message-to skip_intro toggle-global        #menu: 标记 > 全局使用 #@state=(ud_skip_intro_auto_global and 'checked')
 
 local mp = require 'mp'
 local msg = require 'mp.msg'
@@ -23,6 +24,7 @@ local marks = {}
 local current_key = nil
 local auto_skip_start = false
 local auto_skip_end = false
+local auto_global = false
 
 ------------------------------------------------------------
 -- Helpers
@@ -35,6 +37,10 @@ end
 local function fmt(t)
     if not t then return 'unset' end
     return string.format('%.3f', t)
+end
+
+local function now_ts()
+    return os.time()
 end
 
 local function is_url(path)
@@ -66,6 +72,22 @@ local function ensure_marks(key)
         marks[key] = {}
     end
     return marks[key]
+end
+
+-- 在全局模式下，找所有 key 中片头/片尾时间戳最新的那条
+-- 返回 { start = ..., ["end"] = ..., start_ts = ..., end_ts = ..., key = ... }
+local function latest_global_mark(field)
+    local best_val, best_ts, best_key
+    local ts_field = field == 'start' and 'start_ts' or 'end_ts'
+    for k, v in pairs(marks) do
+        if type(v) == 'table' and type(v[field]) == 'number' then
+            local ts = type(v[ts_field]) == 'number' and v[ts_field] or 0
+            if not best_ts or ts > best_ts then
+                best_val, best_ts, best_key = v[field], ts, k
+            end
+        end
+    end
+    return best_val, best_ts, best_key
 end
 
 ------------------------------------------------------------
@@ -164,6 +186,32 @@ local function effective_marks(key)
     return merged
 end
 
+-- 根据 auto_global 决定用哪个片头/片尾值
+-- 返回 { start = ..., ["end"] = ..., src = 'global'|'local' }
+local function pick_marks_for_auto()
+    if auto_global then
+        local g_start, g_start_ts, g_start_key = latest_global_mark('start')
+        local g_end, g_end_ts, g_end_key = latest_global_mark('end')
+        if g_start or g_end then
+            return {
+                start = g_start,
+                ["end"] = g_end,
+                start_ts = g_start_ts,
+                end_ts = g_end_ts,
+                start_key = g_start_key,
+                end_key = g_end_key,
+                src = 'global',
+            }
+        end
+        -- 没有全局标记则回退到当前 key
+    end
+    local m = effective_marks(current_key)
+    if m then
+        return { start = m.start, ["end"] = m["end"], src = 'local' }
+    end
+    return nil
+end
+
 ------------------------------------------------------------
 -- Sync state to mpv properties (so #@state= can read them)
 ------------------------------------------------------------
@@ -171,6 +219,7 @@ end
 local function sync_state_to_mpv()
     mp.set_property_native('user-data/skip-intro-auto-skip-start', auto_skip_start)
     mp.set_property_native('user-data/skip-intro-auto-skip-end', auto_skip_end)
+    mp.set_property_native('user-data/skip-intro-auto-global', auto_global)
 end
 
 ------------------------------------------------------------
@@ -227,9 +276,15 @@ local function build_marks_json()
         local inner = {}
         if type(v.start) == 'number' then
             inner[#inner + 1] = string.format('"start":%.3f', v.start)
+            if type(v.start_ts) == 'number' then
+                inner[#inner + 1] = string.format('"start_ts":%d', v.start_ts)
+            end
         end
         if type(v["end"]) == 'number' then
             inner[#inner + 1] = string.format('"end":%.3f', v["end"])
+            if type(v.end_ts) == 'number' then
+                inner[#inner + 1] = string.format('"end_ts":%d', v.end_ts)
+            end
         end
         parts[#parts + 1] = string.format('"%s":{%s}', json_escape(k), table.concat(inner, ','))
     end
@@ -270,14 +325,17 @@ local function load_marks()
         if type(data.auto_skip_end) == 'boolean' then
             auto_skip_end = data.auto_skip_end
         end
+        if type(data.auto_global) == 'boolean' then
+            auto_global = data.auto_global
+        end
     else
         marks = data
     end
 
     local n = 0
     for _ in pairs(marks) do n = n + 1 end
-    msg.info(string.format('skip-intro: loaded %d key(s), auto_start=%s, auto_end=%s',
-        n, tostring(auto_skip_start), tostring(auto_skip_end)))
+    msg.info(string.format('skip-intro: loaded %d key(s), auto_start=%s, auto_end=%s, auto_global=%s',
+        n, tostring(auto_skip_start), tostring(auto_skip_end), tostring(auto_global)))
 end
 
 local function save_marks()
@@ -286,17 +344,20 @@ local function save_marks()
         mark_count = mark_count + 1
         local s = v.start and string.format('%.3f', v.start) or 'nil'
         local e = v["end"] and string.format('%.3f', v["end"]) or 'nil'
-        msg.info(string.format('skip-intro: save_marks: key=%s start=%s end=%s', k, s, e))
+        local sts = v.start_ts and tostring(v.start_ts) or 'nil'
+        local ets = v.end_ts and tostring(v.end_ts) or 'nil'
+        msg.info(string.format('skip-intro: save_marks: key=%s start=%s (ts=%s) end=%s (ts=%s)', k, s, sts, e, ets))
     end
-    msg.info(string.format('skip-intro: save_marks: %d key(s), auto_start=%s, auto_end=%s',
-        mark_count, tostring(auto_skip_start), tostring(auto_skip_end)))
+    msg.info(string.format('skip-intro: save_marks: %d key(s), auto_start=%s, auto_end=%s, auto_global=%s',
+        mark_count, tostring(auto_skip_start), tostring(auto_skip_end), tostring(auto_global)))
 
     local marks_json = build_marks_json()
     local auto_start_json = auto_skip_start and 'true' or 'false'
     local auto_end_json = auto_skip_end and 'true' or 'false'
+    local auto_global_json = auto_global and 'true' or 'false'
     local json = string.format(
-        '{"marks":%s,"auto_skip_start":%s,"auto_skip_end":%s}',
-        marks_json, auto_start_json, auto_end_json
+        '{"marks":%s,"auto_skip_start":%s,"auto_skip_end":%s,"auto_global":%s}',
+        marks_json, auto_start_json, auto_end_json, auto_global_json
     )
 
     msg.info('skip-intro: save_marks: json = ' .. json)
@@ -344,8 +405,13 @@ mp.register_script_message('set-mark', function(name)
 
     local m = ensure_marks(current_key)
     m[name] = t
+    if name == 'start' then
+        m.start_ts = now_ts()
+    else
+        m.end_ts = now_ts()
+    end
     save_marks()
-    msg.info(string.format('skip-intro: set %s = %.3f for %s', name, t, current_key))
+    msg.info(string.format('skip-intro: set %s = %.3f (ts=%d) for %s', name, t, now_ts(), current_key))
     mp.osd_message(string.format('Marked %s = %.3f s', name, t), 2)
 end)
 
@@ -383,7 +449,8 @@ mp.register_script_message('show-marks', function()
     local s = m and m.start and fmt(m.start) or 'unset'
     local e = m and m["end"] and fmt(m["end"]) or 'unset'
     local key_display = current_key or 'none'
-    mp.osd_message('key=' .. key_display .. ' (' .. src .. ')\nstart=' .. s .. '  end=' .. e, 3)
+    local extra = auto_global and '  [global ON]' or ''
+    mp.osd_message('key=' .. key_display .. ' (' .. src .. ')' .. extra .. '\nstart=' .. s .. '  end=' .. e, 3)
     msg.info('skip-intro: show-marks key=' .. key_display .. ' src=' .. src .. ' start=' .. s .. ' end=' .. e)
 end)
 
@@ -399,6 +466,13 @@ mp.register_script_message('toggle-auto-end', function()
     save_marks()
     sync_state_to_mpv()
     mp.osd_message('Auto-skip outro: ' .. (auto_skip_end and 'on' or 'off'), 2)
+end)
+
+mp.register_script_message('toggle-global', function()
+    auto_global = not auto_global
+    save_marks()
+    sync_state_to_mpv()
+    mp.osd_message('Global marks: ' .. (auto_global and 'on' or 'off'), 2)
 end)
 
 ------------------------------------------------------------
@@ -418,9 +492,9 @@ local function on_file_loaded()
     end
     marks[current_key]._end_triggered = false
 
-    local m = effective_marks(current_key)
+    local picked = pick_marks_for_auto()
 
-    if auto_skip_start and m and m.start and m.start > 0 then
+    if auto_skip_start and picked and picked.start and picked.start > 0 then
         mp.add_timeout(0.1, function()
             if key_for(mp.get_property('path')) ~= current_key then return end
 
@@ -436,15 +510,17 @@ local function on_file_loaded()
 
             -- 兜底：如果 time-pos 已经大于 start，也不跳
             local cur = mp.get_property_number('time-pos')
-            if cur and cur > m.start then
+            if cur and cur > picked.start then
                 msg.info(string.format(
                     'skip-intro: already at %.1f s, skipping intro seek',
                     cur))
                 return
             end
 
-            mp.commandv('seek', m.start, 'absolute')
-            mp.osd_message(string.format('Skipped intro %.1f s', m.start), 1)
+            mp.commandv('seek', picked.start, 'absolute')
+            local src = picked.src == 'global' and ' (global)' or ''
+            mp.osd_message(string.format('Skipped intro %.1f s%s', picked.start, src), 1)
+            msg.info(string.format('skip-intro: auto-skip intro to %.3f (src=%s)', picked.start, picked.src))
         end)
     end
 end
@@ -454,15 +530,17 @@ local function on_time_pos_change(_, t)
     if not t then return end
     if not current_key then return end
 
-    local m = effective_marks(current_key)
-    if not m or not m["end"] then return end
+    local picked = pick_marks_for_auto()
+    if not picked or not picked["end"] then return end
 
     local state = marks[current_key]
     if state and state._end_triggered then return end
 
-    if t >= m["end"] - 0.3 then
+    if t >= picked["end"] - 0.3 then
         if state then state._end_triggered = true end
-        mp.osd_message('Skipped outro', 1)
+        local src = picked.src == 'global' and ' (global)' or ''
+        mp.osd_message('Skipped outro' .. src, 1)
+        msg.info(string.format('skip-intro: auto-skip outro at %.3f (src=%s)', picked["end"], picked.src))
         mp.commandv('playlist-next')
     end
 end
