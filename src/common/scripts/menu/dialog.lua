@@ -1,6 +1,3 @@
--- Copyright (c) 2023-2024 tsl0922. All rights reserved.
--- SPDX-License-Identifier: GPL-2.0-only
-
 local opts = require('mp.options')
 local utils = require('mp.utils')
 local msg = require('mp.msg')

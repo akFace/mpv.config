@@ -154,8 +154,8 @@ local function open_url(url)
 end
 
 local function check_update()
-    mp.msg.info("正在检查 akFace/mpv.config 更新……")
-    osd("正在检查 akFace/mpv.config 更新……", 2)
+    mp.msg.info("正在检查 Checking config updates……")
+    osd("正在检查 Checking config updates……", 2)
 
     local latest = get_latest_release()
     if not latest then
@@ -170,17 +170,17 @@ local function check_update()
         osd("无法读取 config-version", 5)
         return
     end
-    mp.msg.info("本地 config-version：" .. current)
+    mp.msg.info("本地 config-version: " .. current)
 
     local cmp = compare_version(current, latest)
     if cmp == nil then
-        osd("版本比较失败\n当前：" .. current .. "\n最新：" .. latest, 5)
+        osd("版本比较失败\n当前 Version: " .. current .. "\n最新 Latest: " .. latest, 5)
         return
     end
 
     if cmp < 0 then
         -- 显示提示，延迟 4 秒后打开浏览器（防止重复触发）
-        osd("发现新版本！\n当前：" .. current .. "\n最新：" .. latest .. "\n即将打开 Release 页面…", 5)
+        osd("发现新版本 New!\n当前 Version: " .. current .. "\n最新 Latest: " .. latest .. "\n即将打开 Open release pages…", 5)
         if not pending_open then
             pending_open = true
             mp.add_timeout(4, function()
@@ -189,9 +189,9 @@ local function check_update()
             end)
         end
     elseif cmp == 0 then
-        osd("已是最新版本：" .. latest, 4)
+        osd("已是最新版本 Already latest：" .. latest, 4)
     else
-        osd("当前版本：" .. current .. "\nGitHub 最新版本：" .. latest, 5)
+        osd("当前版本 Version: " .. current .. "\n最新版本 Latest: " .. latest, 5)
     end
 end
 

@@ -1,29 +1,35 @@
-# MPV 播放器开箱即用配置文件&精美 UI 主题皮肤&常用插件（支持 Windows、macOS、Linux）
+# 一套开箱即用的 MPV 播放器配置, 多种 UI 主题皮肤, 常用插件, 插帧超分等功能, 支持 Windows / macOS / Linux。
 
 > [!TIP]
 >
-> - The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms, **multiple menu styles available**
-> - mpv 配置文件支持 Windows、macOS、Linux，全平台带有一致的右键菜单功能，**多种菜单样式可选**
+> - A feature-rich mpv player configuration with a modern UI, supports Windows, macOS, and Linux, a consistent context menu feature across all platforms, **multiple menu styles available**.
+> - 全平台带有一致的右键菜单功能，**多种菜单样式可选**
 
 ![主页](./docs/images/main.png)
 
 <p align="center">
-  <img alt="mpv 0.40+" src="https://img.shields.io/badge/mpv-0.40%2B-2b2d33?style=flat-square&labelColor=8934D9">
-  <img alt="Windows, macOS, Linux" src="https://img.shields.io/badge/platform-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2b2d33?style=flat-square&labelColor=008040">
-  <img alt="License LGPL-2.1" src="https://img.shields.io/badge/license-LGPL--2.1-2b2d33?style=flat-square&labelColor=C7690C">
-  <a href="https://github.com/akFace/mpv.config/releases"><img alt="Releases" src="https://flat.badgen.net/github/release/akFace/mpv.config"></a>
+  <img alt="mpv 0.40+" src="https://img.shields.io/badge/mpv-0.40%2B-2c4564?style=flat-square&labelColor=8934D9">
+  <img alt="Windows, macOS, Linux" src="https://img.shields.io/badge/platform-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2c4564?style=flat-square&labelColor=008040">
+  <img alt="License LGPL-2.1" src="https://img.shields.io/badge/license-LGPL--2.1-2c4564?style=flat-square&labelColor=C7690C">
+  <a href="https://github.com/akFace/mpv.config/releases" target="_blank"><img alt="Releases" src="https://img.shields.io/github/downloads/akface/mpv.config/total?style=flat-square&labelColor=088cac&color=2c4564"></a>
+  <a href="https://discord.gg/w57t6m6jWu" target="_blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-blue?logo=discord&style=flat-square&labelColor=5966F3&logoColor=ffffff&color=2c4564"></a>
+  <a href="https://pd.qq.com/s/cp5zsp7a4?b=9" target="_blank"><img alt="Discord" src="https://img.shields.io/badge/QQ频道-blue?logo=qq&style=flat-square&labelColor=00BFE0&logoColor=ffffff&color=2c4564"></a>
 </p>
 
-### 中文 | [English](https://github.com/akFace/mpv.config/blob/main/README_en.md)
+### 🌏 中文 | [English](https://github.com/akFace/mpv.config/blob/main/README_en.md)
 
 ## 使用教程
 
 - [查看详细使用教程](https://mpvConfig.github.io/docs/install.html)
 - To check out docs, visit [Installation Guide](https://mpvConfig.github.io/docs/en)
 
+- 下载最新版
+
+  <a href="https://github.com/akFace/mpv.config/releases/latest"><img alt="Releases" src="https://img.shields.io/github/v/release/akface/mpv.config.svg?style=for-the-badge&labelColor=140B2D&label=%E2%86%93%20Download&color=00B8D4"></a>
+
 ## 主页
 
-- 🎉 官网主页：[https://mpvconfig.github.io](https://mpvConfig.github.io/)
+- 🎉 网站主页：[https://mpvconfig.github.io](https://mpvConfig.github.io/)
 - 📔 文档主页：[https://mpvconfig.github.io/docs](https://mpvconfig.github.io/docs/)
 
 ## 主要功能
@@ -40,6 +46,7 @@
 - 可视化调节 eq 均衡器、声道切换、自动 HDR、解码切换、调色等常用功能
 - 实时切换主题配色
 - 自动跳过片头片尾
+- 音乐可视化频谱
 - Windows、macOS、Linux 全平台一致的强大右键菜单功能
 - 轻量级，超简单，只需简单几步骤即可完成享用
 
@@ -67,18 +74,19 @@
 
 ![image](./docs/images/preview.gif)
 
+### 音乐可视化频谱
+
+![image](./docs/images/visualizer.gif)
+
 🍭 更多特性： [https://mpvconfig.github.io](https://mpvConfig.github.io/)
-
-## 下载最新版本
-
-[![Keyboard Shortcuts](https://flat.badgen.net/github/release/akFace/mpv.config)](https://github.com/akFace/mpv.config/releases)
 
 ## Open-source project
 
 See also:
 
 - [equalizer-gui](https://github.com/akFace/equalizer-gui)
-- [mpv-menu-plugin-next](https://github.com/akFace/mpv-menu-plugin-next)
+- [mpv-visualizer](https://github.com/mpvConfig/mpv-visualizer)
+- [mpv-menu-plugin-next](https://github.com/mpvConfig/mpv-menu-plugin-next)
 - [switch-opts](./src/common/scripts/switch-opts.lua)
 - [interp_switch](./src/common/scripts/interp_switch.lua)
 - [skip-intro](./src/common/scripts/skip-intro.lua)

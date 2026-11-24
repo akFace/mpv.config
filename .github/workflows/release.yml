@@ -1,12 +1,7 @@
 name: Auto Build and Release
 
+# 纯手动触发
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "src/**"
-      - "build.js"
   workflow_dispatch:
 
 jobs:
@@ -15,6 +10,7 @@ jobs:
 
     permissions:
       contents: write
+      pull-requests: read
 
     steps:
       - name: Checkout Repository
@@ -26,54 +22,92 @@ jobs:
       - name: Generate Version and Release Notes
         id: release_info
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
 
-          # 获取最新 Tag
+          # 1. 获取最新 Tag
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
-
           if [ -z "$LAST_TAG" ]; then
             LAST_TAG="v1.0.0"
           fi
-
           echo "Last Tag: $LAST_TAG"
 
-          # 自动递增版本号
+          # 2. 自动递增版本号 (Patch + 1)
           VERSION_NUM=${LAST_TAG#v}
           MAJOR_MINOR=${VERSION_NUM%.*}
           PATCH=${VERSION_NUM##*.}
-
           NEW_PATCH=$((PATCH + 1))
           NEW_TAG="v${MAJOR_MINOR}.${NEW_PATCH}"
-
           echo "New Tag: $NEW_TAG"
-
           echo "NEW_TAG=$NEW_TAG" >> "$GITHUB_OUTPUT"
 
-          # 获取 Commit 日志：排除 README.md / README_en.md 相关文件变更
-          if git rev-parse "$LAST_TAG" >/dev/null 2>&1; then
-            COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s" -- . ':(exclude)README.md' ':(exclude)README_en.md')
-          else
-            COMMITS=$(git log --pretty=format:"- %s" -- . ':(exclude)README.md' ':(exclude)README_en.md')
+          # 3. 判断是否有多位贡献者 (>= 2人)
+          UNIQUE_AUTHORS=$(git log "$LAST_TAG"..HEAD --pretty=format:"%an" | sort -u)
+          AUTHOR_COUNT=$(echo "$UNIQUE_AUTHORS" | grep -v '^$' | wc -l | tr -d ' ')
+          SHOW_AUTHOR=false
+          if [ "$AUTHOR_COUNT" -ge 2 ]; then
+            SHOW_AUTHOR=true
           fi
+          echo "是否有多个贡献者: $SHOW_AUTHOR ($AUTHOR_COUNT 人)"
+
+          # 4. 提取并格式化日志
+          RAW_LOGS=$(git log "$LAST_TAG"..HEAD --pretty=format:"%h|%H|%an|%s" -- . ':(exclude)README.md' ':(exclude)README_en.md' || true)
+
+          COMMITS=""
+          while IFS='|' read -r short_hash full_hash author subject; do
+            if [ -z "$subject" ]; then continue; fi
+            if echo "$subject" | grep -q -E "^(Merge pull request|Merge branch)"; then continue; fi
+
+            # 生成 Markdown 链接格式: [短哈希](完整Commit链接)
+            commit_link="[${short_hash}](https://github.com/${GITHUB_REPOSITORY}/commit/${full_hash})"
+
+            # 检查是否是 PR 合并
+            if [[ "$subject" =~ \(#([0-9]+)\)$ ]]; then
+              PR_NUM="${BASH_REMATCH[1]}"
+              CLEAN_TITLE=$(echo "$subject" | sed -E 's/ \(#[0-9]+\)$//')
+              
+              # 对于 PR，直接用 GitHub API 获取最准确的作者用户名
+              PR_AUTHOR=$(gh pr view "$PR_NUM" --json author --jq .author.login 2>/dev/null || echo "$author")
+              
+              if [ "$SHOW_AUTHOR" = "true" ]; then
+                COMMITS+="- ${CLEAN_TITLE} by @${PR_AUTHOR} in #${PR_NUM}\n"
+              else
+                COMMITS+="- ${CLEAN_TITLE} in #${PR_NUM}\n"
+              fi
+            else
+              # 对于普通 commit，我们不用 "author" 变量，避免各种奇怪的符号
+              # 用 git 自带的方式安全提取
+              CLEAN_AUTHOR=$(git log -1 --format="%an" "$full_hash" | tr -d '\r\n')
+              # 如果含有非法字符或空格，可以视情况处理，这里我们用最干净的方式
+              # GitHub 的推送用户名通常和邮箱、committer 是一致的
+              
+              if [ "$SHOW_AUTHOR" = "true" ]; then
+                COMMITS+="- ${subject} by @${CLEAN_AUTHOR} in (${commit_link})\n"
+              else
+                COMMITS+="- ${subject} (${commit_link})\n"
+              fi
+            fi
+          done <<< "$RAW_LOGS"
 
           if [ -z "$COMMITS" ]; then
             COMMITS="- 自动更新配置与脚本"
           fi
 
-          # 生成 Release 描述
+          # 5. 生成 Release 描述文本
           cat > release_body.txt <<EOF
           ### UI主题皮肤包含：\`modernz\`、\`modern_glass\` 和 \`uosc\` + 多种菜单风格
 
           - 如何自定义配置 mpv.conf 与快捷键/菜单 input.conf，在更新版本时直接覆盖不受影响？ 📢 [查看文档](https://mpvconfig.github.io/docs/custom.html)
           - 推荐： 油猴脚本 ⇢ [使用 mpv 播放网页中的视频](https://github.com/akFace/play-with-mpv)
-          - 📔 [Docs Guide](https://mpvconfig.github.io/docs/en)  | 🛠 [详细使用教程](https://mpvconfig.github.io/docs/install.html) | 🚀 [更新教程](https://mpvconfig.github.io/docs/update.html) | 🍭 [超分滤镜说明指南](https://mpvconfig.github.io/docs/shaders.html) | ⌨ [常用快捷键](https://mpvconfig.github.io/docs/shortcuts.html) | 🎯 [主题效果预览](https://mpvconfig.github.io/docs/preview.html)
+          - 📔 [Docs Guide](https://mpvconfig.github.io/docs/en)  | 🛠 [详细使用教程](https://mpvconfig.github.io/docs/install.html) | 🚀 [更新教程](https://mpvconfig.github.io/docs/update.html) | 🍭 [超分滤镜说明指南](https://mpvconfig.github.io/docs/shaders.html) | ⌨ [常用快捷键](https://mpvconfig.github.io/docs/shortcuts.html) | 🎨 [界面设置](https://mpvconfig.github.io/docs/conf.html) | 🎯 [主题效果预览](https://mpvconfig.github.io/docs/preview.html)
 
           > [!TIP]
           >
           > - 请选择喜欢的某一套下载，每一个压缩包都已包含所有配置文件，解压放到配置文件夹下，重启播放器即可
-          > - Note: \`UIName_language.zip\` 前缀为UI主题名称，后缀为不同的语言，**中文版建议下载 `_zh.zip` 后缀版本**。 \`modern_glass\` 是模拟液态玻璃UI比较吃性能，建议在性能较好的设备上使用。
-          > - 不想折腾教程的 ⇢ [懒人整合安装包解压直接用，所有功能一致](https://pan.quark.cn/s/44d4b871af74)
+          > - Note: \`UIName_language.zip\` 前缀为UI主题名称，后缀为不同的语言，**中文版建议下载 \`_zh.zip\` 后缀版本**。 \`modern_glass\` 是模拟液态玻璃UI比较吃性能，建议在性能较好的设备上使用。
+          > - 不想折腾教程的 ⇢ [懒人整合安装包解压直接用，所有功能一致](https://mpvconfig.github.io/docs/download)
 
           ---
 
@@ -81,7 +115,8 @@ jobs:
 
           EOF
 
-          echo "$COMMITS" >> release_body.txt
+          # 将处理好的提交记录追加到文件
+          echo -e "$COMMITS" >> release_body.txt
 
       # ---------- 设置 Node.js 环境 ----------
       - name: Setup Node.js
@@ -93,13 +128,13 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # ---------- 替换原有的 Create ZIP Archives 步骤 ----------
+      # ---------- 构建压缩包 ----------
       - name: Build ZIP Archives with Node.js
         run: node build.js
         env:
           RELEASE_VERSION: ${{ steps.release_info.outputs.NEW_TAG }}
 
-      # ---------- 创建 GitHub Release（文件路径改为 dist/*.zip） ----------
+      # ---------- 创建 GitHub Release ----------
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -110,3 +145,57 @@ jobs:
           files: dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------- 发送 Discord 通知 ----------
+      - name: Send Discord Notification
+        if: success()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          NEW_VERSION: ${{ steps.release_info.outputs.NEW_TAG }}
+        shell: bash
+        run: |
+          # 1. 提取纯净的日志内容
+          MSG_CONTENT=$(awk '/### Update log:/{flag=1} flag' release_body.txt)
+
+          # 2. 去除 in (xxxxx) 这种 commit 链接尾巴
+          MSG_CONTENT=$(echo "$MSG_CONTENT" | sed -E 's/ (by @[a-zA-Z0-9_-]+ )?\(\[[a-zA-Z0-9]+\]\(https:\/\/[^\)]+\)\)//g')
+
+          # 3. 构造 Discord 专用的 JSON Payload
+          # Discord 用的是 JSON，并且支持原生 Markdown，不需要复杂的 URL 编码
+          # 这里我们用 Python 安全地生成 JSON，防止换行符破坏 JSON 结构
+          JSON_PAYLOAD=$(python3 -c "
+          import json, sys
+          version = sys.argv[1]
+          repo = sys.argv[2]
+          body = sys.argv[3]
+
+          content = f'''🚀 **【新版本 / New Version!】：{version}**
+
+          ⇢ [Release latest](https://github.com/akFace/mpv.config/releases/latest)
+
+          {body}'''
+
+          # 将内容封装进 Discord 要求的 JSON 结构中
+          print(json.dumps({
+              'content': content,
+              'username': 'GitHub Bot',
+              'avatar_url': 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
+              'thread_name': f'🚀 新版本 / New Version {version}'
+          }))
+          " "$NEW_VERSION" "${{ github.repository }}" "$MSG_CONTENT")
+
+          # 4. 发送到 Discord
+          echo "正在发送到 Discord..."
+          RESPONSE=$(curl -s -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$JSON_PAYLOAD")
+
+          # 5. 错误检查
+          # Discord 成功时返回 HTTP 204 并且无响应体，失败时会返回错误 JSON
+          if [ -z "$RESPONSE" ]; then
+            echo "✅ Discord 通知发送成功！"
+          else
+            echo "❌ Discord 通知发送失败，返回结果："
+            echo "$RESPONSE"
+            exit 1
+          fi

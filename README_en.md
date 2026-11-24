@@ -1,21 +1,24 @@
-# Ready-to-Use Configuration Files, Elegant UI Themes & Useful Plugins for mpv (Windows, macOS, Linux)
+# The configuration file of the mpv player with modern themes and supports Windows, macOS, Linux
 
 <p align="center">
-  <img alt="mpv 0.40+" src="https://img.shields.io/badge/mpv-0.40%2B-2b2d33?style=flat-square&labelColor=8934D9">
-  <img alt="Windows, macOS, Linux" src="https://img.shields.io/badge/platform-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2b2d33?style=flat-square&labelColor=008040">
-  <img alt="License LGPL-2.1" src="https://img.shields.io/badge/license-LGPL--2.1-2b2d33?style=flat-square&labelColor=C7690C">
-  <a href="https://github.com/akFace/mpv.config/releases"><img alt="Releases" src="https://flat.badgen.net/github/release/akFace/mpv.config"></a>
+  <img alt="mpv 0.40+" src="https://img.shields.io/badge/mpv-0.40%2B-2c4564?style=flat-square&labelColor=8934D9">
+  <img alt="Windows, macOS, Linux" src="https://img.shields.io/badge/platform-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2c4564?style=flat-square&labelColor=008040">
+  <img alt="License LGPL-2.1" src="https://img.shields.io/badge/license-LGPL--2.1-2c4564?style=flat-square&labelColor=C7690C">
+  <a href="https://github.com/akFace/mpv.config/releases" target="_blank"><img alt="Releases" src="https://img.shields.io/github/downloads/akface/mpv.config/total?style=flat-square&labelColor=088cac&color=2c4564"></a>
+  <a href="https://discord.gg/w57t6m6jWu" target="_blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-blue?logo=discord&style=flat-square&labelColor=5966F3&logoColor=ffffff&color=2c4564"></a>
 </p>
 
-> The configuration file of the mpv player supports Windows, macOS, Linux, with a consistent context menu feature across all platforms.
-
-#### [中文](https://github.com/akFace/mpv.config/blob/main/README.md) | English
+#### 🌏 [中文](https://github.com/akFace/mpv.config/blob/main/README.md) | English
 
 - Note: This document was translated by `AI-translated` and may contain some inaccuracies.
 
 ## Installation
 
 - 🎯 To check out docs, visit [Installation Guide](https://mpvConfig.github.io/docs/en/install.html)
+
+- Download the latest version
+
+  <a href="https://github.com/akFace/mpv.config/releases/latest"><img alt="Releases" src="https://img.shields.io/github/v/release/akface/mpv.config.svg?style=for-the-badge&labelColor=140B2D&label=%E2%86%93%20Download&color=00B8D4"></a>
 
 ## Home Pages
 
@@ -36,6 +39,7 @@
 - **Visual Audio & Video Controls** — Easily adjust the EQ, switch audio channels and decoding methods, enable automatic HDR, and fine-tune colors.
 - **Live Theme Customization** — Switch theme color schemes on the fly.
 - **Automatic Intro & Outro Skipping** — Skip video intros and outros automatically.
+- **Audio Visualizer** — Visualize audio in real time.
 - **Cross-Platform Menus** — Consistent, feature-rich right-click menus on Windows, macOS, and Linux.
 - **Lightweight & Easy to Set Up** — Get started in just a few simple steps.
 
@@ -47,9 +51,19 @@
 
 ![image](./docs/images/Snipaste_2026-09-02_22-25-41.jpg)
 ![image](./docs/images/Snipaste_2026-10-10_15-08-58.jpg)
-**modern_glass** ⇣⇣
+**modern_glass** ⇣
 ![image](./docs/images/Snipaste_2026-10-13_21-06-43.jpg)
-**modernz** ⇣⇣
+**modernz** ⇣
 ![image](./docs/images/Snipaste_2026-09-02_22-31-00.jpg)
-**uosc** ⇣⇣
+**uosc** ⇣
 ![image](./docs/images/Snipaste_2026-08-24_03-00-53.jpg)
+
+### Audio Visualizer
+
+![image](./docs/images/visualizer.gif)
+
+## Open-source-project
+
+Thanks to the following open-source projects for making this possible:
+
+⇢ [open-source-project](https://github.com/akFace/mpv.config#open-source-project)
