@@ -321,6 +321,7 @@ local function render()
     if not osd or osd.w == 0 or osd.h == 0 then return end
 
     local virtual_h = BASE_W * osd.h / osd.w
+    overlay.z = 100
     overlay.res_x = BASE_W
     overlay.res_y = math.floor(virtual_h + 0.5)
 

@@ -1,5 +1,5 @@
 -- ==============================================================================
--- visualizer.lua — 音频频谱可视化生成器（独立格式圆角框）
+-- visualizer.lua — 音频频谱可视化生成器
 -- ==============================================================================
 local options = require 'mp.options'
 local assdraw = require 'mp.assdraw'
@@ -11,11 +11,30 @@ if not (mp.get_property("options/lavfi-complex", "") == "") then return end
 -- ==============================================================================
 -- 通用常量
 -- ==============================================================================
-local GOLD       = "00A5C8"   -- 沉稳金标色 #C8A500
-local GREY_WHITE = "E0E0E0"   -- 灰白色 #E0E0E0
-local GREY       = "AAAAAA"   -- 灰色 #AAAAAA
+local GOLD       = "00A5C8"
+local GREY_WHITE = "E0E0E0"
+local GREY       = "AAAAAA"
 local FONT       = "Arial"
 local WHITE      = "FFFFFF"
+
+-- 固定 16:9 画布（与 lavfi 帧一致），避免全屏 16:10 时 ASS 非等比拉伸
+local function quality_size(quality)
+    if quality == "verylow" then return 640, 30
+    elseif quality == "low" then return 960, 30
+    elseif quality == "medium" then return 1280, 60
+    elseif quality == "high" then return 1920, 60
+    elseif quality == "veryhigh" then return 2560, 60
+    else return 1280, 60 end
+end
+
+local function get_canvas()
+    local w, h = mp.get_osd_size()
+    if w and w > 0 and h and h > 0 then
+        return w, h
+    end
+    local qw = quality_size(opts.quality)
+    return qw, math.floor(qw * 9 / 16)
+end
 
 -- ==============================================================================
 -- ASS 文字处理辅助
@@ -119,7 +138,7 @@ local function wrap_text(str, font_size, max_width)
 end
 
 -- ==============================================================================
--- 音频元信息 (强化读取)
+-- 音频元信息
 -- ==============================================================================
 local function get_audio_bitrate()
     local br = mp.get_property_number("audio-bitrate", 0)
@@ -236,7 +255,6 @@ local function draw_circle(ass, cx, cy, radius, color, alpha)
     ass:draw_stop()
 end
 
--- 修正后的圆角矩形路径（原点在左上角 0,0，强制偏移宽高一半以居中）
 local function round_rect_path(w, h, rad)
     rad = math.min(rad, w / 2, h / 2)
     local x0, y0 = 0, 0
@@ -245,11 +263,11 @@ local function round_rect_path(w, h, rad)
     local p = {}
     local function mv(x, y) p[#p + 1] = string.format("m %d %d", x + offset_x, y + offset_y) end
     local function ln(x, y) p[#p + 1] = string.format("l %d %d", x + offset_x, y + offset_y) end
-    local function bc(c1x, c1y, c2x, c2y, x, y) 
-        p[#p + 1] = string.format("b %d %d %d %d %d %d", 
-            c1x + offset_x, c1y + offset_y, c2x + offset_x, c2y + offset_y, x + offset_x, y + offset_y) 
+    local function bc(c1x, c1y, c2x, c2y, x, y)
+        p[#p + 1] = string.format("b %d %d %d %d %d %d",
+            c1x + offset_x, c1y + offset_y, c2x + offset_x, c2y + offset_y, x + offset_x, y + offset_y)
     end
-    
+
     mv(x0 + rad, y0)
     ln(x0 + w - rad, y0)
     bc(x0 + w - rad + k, y0, x0 + w, y0 + rad - k, x0 + w, y0 + rad)
@@ -296,18 +314,18 @@ local function draw_avectorscope_original()
         return
     end
 
-    local w, h = mp.get_osd_size()
-    if not w or w <= 0 then return end
-
-    local diameter = math.min(w, h) * (200 / 720)
+    local w, h = get_canvas()
+    local canvas = math.min(w, h)
+    local diameter = canvas * (200 / 720)
     local r = diameter / 2
-    local cx, cy = w / 2, h * 0.5
+    local cx, cy = w / 2, h / 2
+    local s = diameter / 200
     local ass = assdraw.ass_new()
 
-    draw_ring(ass, cx, cy, r, r + 11, r - 1, 0xD0, 96)
-    draw_ring(ass, cx, cy, r, r + 7,  r - 1, 0xA0, 96)
+    draw_ring(ass, cx, cy, r, r + 11*s, r - 1*s, 0xD0, 96)
+    draw_ring(ass, cx, cy, r, r + 7*s,  r - 1*s, 0xA0, 96)
     draw_circle(ass, cx, cy, r, "000000", 0x00)
-    draw_ring(ass, cx, cy, r, r + 2, r - 2, 0x00, 120)
+    draw_ring(ass, cx, cy, r, r + 2*s,  r - 2*s, 0x00, 120)
 
     local title = mp.get_property("metadata/by-key/title", "")
     local artist = mp.get_property("metadata/by-key/artist", "")
@@ -321,9 +339,9 @@ local function draw_avectorscope_original()
 
     local title_text  = wrap_text(title,  title_size,  text_max_width)
     local artist_text = wrap_text(artist, artist_size, text_max_width)
-    
+
     local fmt, dot, info = get_audio_info_separated()
-    
+
     local title_lines  = select(2, title_text:gsub("\\N", "")) + 1
     local artist_lines = select(2, artist_text:gsub("\\N", "")) + 1
 
@@ -339,36 +357,32 @@ local function draw_avectorscope_original()
     local artist_y = base_y + title_h + spacing + artist_h / 2
     local meta_y   = base_y + title_h + spacing + artist_h + spacing + meta_h / 2
 
-    -- Title / Artist
     ass:new_event(); ass:pos(cx, title_y)
     ass:append(string.format("{\\an5\\fn%s\\fs%d\\b0\\1c&H%s&\\1a&H00&\\bord0\\shad0}%s", FONT, title_size, WHITE, title_text))
     ass:new_event(); ass:pos(cx, artist_y)
     ass:append(string.format("{\\an5\\fn%s\\fs%d\\b0\\1c&H%s&\\1a&H00&\\bord0\\shad0}%s", FONT, artist_size, WHITE, artist_text))
 
-    -- Meta: 独立格式框 + 分散文字排版
     local fmt_w = text_width(fmt, artist_size)
     local info_w = text_width(info, artist_size)
     local total_w = fmt_w + info_w
-    
+
     local start_x = cx - total_w / 2 + 10
     local fmt_center = start_x + fmt_w / 2 - 10
     local info_center = start_x + fmt_w + info_w / 2
     local fw, fh, rad = fmt_w + artist_size*0.8, artist_size * 1.2, artist_size
 
-    -- 1. 画单独的框
     ass:new_event(); ass:pos(fmt_center, meta_y)
     ass:append(string.format("{\\an7\\p1\\1c&H%s&\\1a&HFF&\\3c&H%s&\\3a&H00&\\bord1.5\\shad0}", GOLD, GOLD))
     ass:append(round_rect_path(fw, fh, rad))
     ass:append("{\\p0}")
 
-    -- 2. 框内文字 (金标)
     ass:new_event(); ass:pos(fmt_center, meta_y)
     ass:append(string.format("{\\an5\\fn%s\\fs%d\\b0\\1c&H%s&\\1a&H00\\bord0\\shad0}%s", FONT, artist_size*0.8, GOLD, fmt))
 
-    -- 4. 参数文字 (灰白)
     ass:new_event(); ass:pos(info_center, meta_y)
     ass:append(string.format("{\\an5\\fn%s\\fs%d\\b0\\1c&H%s&\\1a&H00\\bord0\\shad0}%s", FONT, artist_size, GREY_WHITE, info))
 
+    -- 脚本分辨率固定 16:9，mpv 会等比 letterbox 到屏幕
     mp.set_osd_ass(w, h, ass.text)
 end
 
@@ -420,32 +434,33 @@ end
 
 local function draw_avectorscope_cd()
     if not is_vis_needed() then clear_cd_overlays(); mp.set_osd_ass(0, 0, ""); return end
-    local w, h = mp.get_osd_size()
-    if not w or w <= 0 then return end
 
-    local diameter = math.min(w, h) * (230 / 720)
+    local w, h = get_canvas()
+    local canvas = math.min(w, h)
+    local diameter = canvas * (230 / 720)
     local r = diameter / 2
-    local cx, cy = w / 2, h * 0.5
+    local cx, cy = w / 2, h / 2
+    local s = diameter / 230
 
     local title = mp.get_property("metadata/by-key/title", "")
     local artist = mp.get_property("metadata/by-key/artist", "")
     if title == "" then title = mp.get_property("filename", "Unknown"):gsub("%.[^%.]+$", "") end
     if artist == "" then artist = "Unknown Artist" end
-    
+
     local fmt, dot, info = get_audio_info_separated()
     local meta_plain = fmt .. " " .. dot .. " " .. info
 
     local key = table.concat({ w, h, title, artist, diameter, meta_plain }, "|")
-    if not cd_ring_overlay then cd_ring_overlay = mp.create_osd_overlay("ass-events"); cd_ring_overlay.z = 10 end
-    if not cd_disc_overlay then cd_disc_overlay = mp.create_osd_overlay("ass-events"); cd_disc_overlay.z = 20 end
-    if not cd_text_overlay then cd_text_overlay = mp.create_osd_overlay("ass-events"); cd_text_overlay.z = 30 end
+    if not cd_ring_overlay then cd_ring_overlay = mp.create_osd_overlay("ass-events"); cd_ring_overlay.z = 1 end
+    if not cd_disc_overlay then cd_disc_overlay = mp.create_osd_overlay("ass-events"); cd_disc_overlay.z = 2 end
+    if not cd_text_overlay then cd_text_overlay = mp.create_osd_overlay("ass-events"); cd_text_overlay.z = 3 end
     if key == cd_cache_key then return end
     mp.set_osd_ass(w, h, "")
 
     local ra, da, ta = assdraw.ass_new(), assdraw.ass_new(), assdraw.ass_new()
 
-    draw_ring(ra, cx, cy, r, r + 11, r - 1, 0xD0, 96)
-    draw_ring(ra, cx, cy, r, r + 7,  r - 1, 0xA0, 96)
+    draw_ring(ra, cx, cy, r, r + 11*s, r - 1*s, 0xD0, 96)
+    draw_ring(ra, cx, cy, r, r + 7*s,  r - 1*s, 0xA0, 96)
 
     draw_circle(da, cx, cy, r - 1, "000000", 0x40)
     draw_circle(da, cx, cy, r * .94, "000000", 0xB0)
@@ -475,12 +490,11 @@ local function draw_avectorscope_cd()
     arc_text(ta, title,  title_fs,  r * .70, cx, cy, WHITE)
     arc_text(ta, artist, artist_fs, r * .33, cx, cy, GREY_WHITE)
 
-    -- Meta: 独立格式框
     local meta_fs = artist_fs
     local fmt_w = text_width(fmt, meta_fs)
     local info_w = text_width(info, meta_fs)
     local total_w = fmt_w + info_w
-    
+
     local start_x = cx - total_w / 2 + 10
     local fmt_center = start_x + fmt_w / 2 - 10
     local info_center = start_x + fmt_w + info_w / 2
@@ -488,20 +502,18 @@ local function draw_avectorscope_cd()
     local fw, fh, rad = fmt_w + meta_fs * 0.8, meta_fs * 1.2, meta_fs
     local cyf = cy + r * 0.6
 
-    -- 1. 画单独的框
     ta:new_event(); ta:pos(fmt_center, cyf)
     ta:append(string.format("{\\an7\\p1\\1c&H%s&\\1a&HFF&\\3c&H%s&\\3a&H00&\\bord1\\shad0}", GOLD, GOLD))
     ta:append(round_rect_path(fw, fh, rad))
     ta:append("{\\p0}")
 
-    -- 2. 框内格式文字 (金标)
     ta:new_event(); ta:pos(fmt_center, cyf)
     ta:append(string.format("{\\an5\\fn%s\\fs%d\\b0\\1c&H%s&\\1a&H00\\bord0\\shad0}%s", FONT, meta_fs*0.8, GOLD, fmt))
 
-    -- 4. 参数文字 (灰白)
     ta:new_event(); ta:pos(info_center, cyf)
     ta:append(string.format("{\\an5\\fn%s\\fs%d\\b0\\1c&H%s&\\1a&H00\\bord0\\shad0}%s", FONT, meta_fs, GREY_WHITE, info))
 
+    -- overlay 脚本分辨率固定 16:9，mpv 等比 letterbox
     cd_ring_overlay.res_x, cd_ring_overlay.res_y, cd_ring_overlay.data = w, h, ra.text
     cd_disc_overlay.res_x, cd_disc_overlay.res_y, cd_disc_overlay.data = w, h, da.text
     cd_text_overlay.res_x, cd_text_overlay.res_y, cd_text_overlay.data = w, h, ta.text
@@ -528,14 +540,8 @@ end
 local visualizer_name_list = { "avectorscope", "avectorscope-cd", "showfreqs", "linefreqs", "off" }
 
 local function get_visualizer(name, quality)
-    local w, fps
-    if quality == "verylow" then w = 640; fps = 30
-    elseif quality == "low" then w = 960; fps = 30
-    elseif quality == "medium" then w = 1280; fps = 60
-    elseif quality == "high" then w = 1920; fps = 60
-    elseif quality == "veryhigh" then w = 2560; fps = 60
-    else w = 1280; fps = 60 end
-    local h = math.floor(w * 9 / 16)
+    local w, fps = quality_size(quality)
+    local h = math.floor(w * 9 / 16)   -- 固定 16:9
     local spec_w, spec_h = w, math.floor(h * 0.45)
     local x, y = math.floor((w - spec_w) / 2), math.floor(h * 0.7 - spec_h / 2)
     if y < 0 then y = 0 end
@@ -582,6 +588,9 @@ mp.observe_property("current-tracks/audio", "native", visualizer_hook)
 mp.observe_property("current-tracks/video", "native", visualizer_hook)
 mp.observe_property("audio-params", "native", visualizer_hook)
 mp.observe_property("file-size", "number", visualizer_hook)
+-- 窗口/全屏尺寸变化时只重绘 OSD（不重建 lavfi，避免窗口回弹）
+mp.observe_property("osd-width",  "number", function() draw_black_circle() end)
+mp.observe_property("osd-height", "number", function() draw_black_circle() end)
 
 -- ==============================================================================
 -- 快捷键与消息绑定
@@ -606,8 +615,6 @@ local function close_visualizer()
     draw_black_circle()
     mp.osd_message("visualizer: off")
 end
-
-mp.add_key_binding("c", "cycle-visualizer", cycle_visualizer)
 
 mp.register_script_message("visualizer", function(arg)
     if arg == "off" then

@@ -2466,11 +2466,42 @@ local function open_windows_primary(multi, folder, save, default_name, src)
             '}'
         }, '\n')
     elseif save then
-        -- Clear special symbols
-        local name = tostring(default_name or 'file'):gsub('["\']', ''):gsub('%.+$', '')
-        local timestamp = os.date("_%Y%m%d_%H%M%S")
-        name = name .. timestamp
-        name = name:gsub('\\', '\\\\')
+        -- 清洗并分离扩展名
+        local raw = tostring(default_name or 'file')
+        raw = raw:gsub('["\']', ''):gsub('[\\/:%*%?<>|]', '_'):gsub('%.+$', '')
+        local stem, ext = raw:match('^(.*)%.([%w]+)$')
+        if not stem or stem == '' then stem, ext = raw, nil end
+        stem = (stem .. os.date("_%Y%m%d_%H%M%S")):gsub('\\', '\\\\')
+        local ext_lower = ext and ext:lower()
+
+        -- 用调用方的 filters 拼 Filter，并把匹配后缀的那段提到最前
+        local filter = 'All Files (*.*)|*.*'
+        local segs = {}
+        for _, f in ipairs(get_filters()) do
+            if type(f) == 'table' and f.name and f.spec then
+                segs[#segs + 1] = { tostring(f.name), tostring(f.spec) }
+            end
+        end
+        if #segs > 0 then
+            if ext_lower then
+                for i, s in ipairs(segs) do
+                    if s[2]:lower():find('%*%.' .. ext_lower, 1, true) then
+                        table.insert(segs, 1, table.remove(segs, i))
+                        break
+                    end
+                end
+            end
+            local parts = {}
+            for _, s in ipairs(segs) do
+                parts[#parts + 1] = s[1]
+                parts[#parts + 1] = s[2]
+            end
+            filter = table.concat(parts, '|')
+        end
+
+        local fileName = stem .. (ext and ('.' .. ext) or '')
+        local default_ext = ext_lower and ('    $sfd.DefaultExt = "' .. ext_lower .. '"') or ''
+
         script = table.concat({
             '& {',
             '    Trap { Write-Error -ErrorRecord $_; Exit 1 }',
@@ -2478,10 +2509,10 @@ local function open_windows_primary(multi, folder, save, default_name, src)
             '    $u8 = [System.Text.Encoding]::UTF8',
             '    $out = [Console]::OpenStandardOutput()',
             '    $sfd = New-Object -TypeName Microsoft.Win32.SaveFileDialog',
-            '    $sfd.Filter = "JPEG Image (*.jpg)|*.jpg|PNG Image (*.png)|*.png|WebP Image (*.webp)|*.webp"',
-            '    $sfd.DefaultExt = "jpg"',
+            '    $sfd.Filter = "' .. filter .. '"',
+            default_ext,
             '    $sfd.AddExtension = $true',
-            '    $sfd.FileName = "' .. name .. '"',
+            '    $sfd.FileName = "' .. fileName .. '"',
             '    If ($sfd.ShowDialog() -eq $true) {',
             '        $u8filename = $u8.GetBytes("$($sfd.FileName)`n")',
             '        $out.Write($u8filename, 0, $u8filename.Length)',
@@ -2508,6 +2539,7 @@ local function open_windows_primary(multi, folder, save, default_name, src)
         }, '\n')
     end
 
+    -- 执行 PowerShell 脚本
     local ok_call, res = pcall(utils.subprocess, {
         args = {'powershell', '-NoProfile', '-Command', script},
         cancellable = false,
@@ -2515,9 +2547,13 @@ local function open_windows_primary(multi, folder, save, default_name, src)
 
     if was_ontop then mp.set_property_native("ontop", true) end
 
+    -- 容错检查
     if not ok_call then return false, tostring(res) end
-    if not res or res.status ~= 0 then return false, (res and res.stderr) or ('subprocess exited with status ' .. tostring(res and res.status or 'unknown')) end
+    if not res or res.status ~= 0 then 
+        return false, (res and res.stderr) or ('subprocess exited with status ' .. tostring(res and res.status or 'unknown')) 
+    end
 
+    -- 解析返回的路径并回调
     local paths = split_lines(res.stdout or '')
     if #paths == 0 then return true, nil end
 
@@ -2528,6 +2564,7 @@ local function open_windows_primary(multi, folder, save, default_name, src)
         for _, path in ipairs(paths) do a[#a + 1] = path end
         mp.commandv(unpack(a))
     end
+    
     return true, nil
 end
 

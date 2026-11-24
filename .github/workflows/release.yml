@@ -157,8 +157,11 @@ jobs:
           # 1. 提取纯净的日志内容
           MSG_CONTENT=$(awk '/### Update log:/{flag=1} flag' release_body.txt)
 
-          # 2. 去除 in (xxxxx) 这种 commit 链接尾巴
-          MSG_CONTENT=$(echo "$MSG_CONTENT" | sed -E 's/ (by @[a-zA-Z0-9_-]+ )?\(\[[a-zA-Z0-9]+\]\(https:\/\/[^\)]+\)\)//g')
+          # 2. 保留 by @作者，只去掉 in 后面的 commit 链接或 PR 编号
+          MSG_CONTENT=$(echo "$MSG_CONTENT" | sed -E \
+            -e 's/ in \(\[[a-zA-Z0-9]+\]\(https:\/\/[^)]+\)\)//g' \
+            -e 's/ in #[0-9]+//g' \
+          )
 
           # 3. 构造 Discord 专用的 JSON Payload
           # Discord 用的是 JSON，并且支持原生 Markdown，不需要复杂的 URL 编码

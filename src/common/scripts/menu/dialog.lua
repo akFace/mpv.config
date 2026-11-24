@@ -200,7 +200,7 @@ mp.register_script_message('save', function(action, arg1)
             { name = 'WebP Image', spec = '*.webp' },
         })
         local filename = mp.get_property('filename/no-ext') or ('screenshot-' .. os.time())
-        mp.set_property('user-data/menu/dialog/default-name', filename)
+        mp.set_property('user-data/menu/dialog/default-name', filename .. '.jpg')
     elseif save_action == 'playlist' then
         if mp.get_property_number('playlist-count', 0) == 0 then
             mp.osd_message('playlist is empty')
@@ -209,8 +209,10 @@ mp.register_script_message('save', function(action, arg1)
 
         mp.set_property_native('user-data/menu/dialog/filters', {
             { name = 'M3U8 Playlist', spec = '*.m3u8' },
+            { name = 'M3U Playlist',  spec = '*.m3u'  },
+            { name = 'PLS Playlist',  spec = '*.pls'  },
         })
-        mp.set_property('user-data/menu/dialog/default-name', 'playlist-' .. os.time())
+        mp.set_property('user-data/menu/dialog/default-name', 'playlist-' .. os.time() .. '.m3u8')
     else
         mp.osd_message('unknown save action: ' .. save_action)
         return
