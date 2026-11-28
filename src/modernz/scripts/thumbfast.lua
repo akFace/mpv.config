@@ -601,9 +601,6 @@ local function spawn(time)
         "--video-rotate="..last_rotate,
         "--ovc=rawvideo", "--of=image2", "--ofopts=update=1", "--o="..options.thumbnail
     }
-
-    mp.msg.error(tostring(get_thumbnail_edition(ytdl)))
-
     -- Pass through the main player's current HTTP request options when
     -- mpv exposes them. yt-dlp may use additional internal headers/cookies
     -- that are not available as mpv properties and therefore cannot be copied.
